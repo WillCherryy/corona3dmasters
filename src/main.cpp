@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
 		{
 			pos_infile = values[i];
 		}
-		else if (parameters[i] == "vel_infle")
+		else if (parameters[i] == "vel_infile")
 		{
 			vel_infile = values[i];
 		}
