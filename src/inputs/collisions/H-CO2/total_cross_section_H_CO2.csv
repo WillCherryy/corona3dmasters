@@ -1,7 +1,4 @@
-#H + CO2(j=0) total cross sections vs collision energy (centre-of-mass frame)
-#Source: Bop and Gacesa 2026, MNRAS 552, 1-8 (doi 10.1093/mnras/stag1696); data doi 10.5281/zenodo.17549249
-#Converted: energy cm-1 -> eV (divide by 8065.541, the conversion used for the source energy grid); cross section Angstrom^2 -> cm^2 (x1e-16)
-#total = elastic plus rotationally inelastic scattering (sum over all final CO2 rotational levels)
+#H-CO2 total collision cross sections from Bop and Gacesa 2026
 #Energy(eV),sigma(cm^2)
 0.001,2.60792548E-14
 0.002,2.98446130E-14

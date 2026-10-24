@@ -1,7 +1,4 @@
-#H + CO2(j=0) elastic cross sections vs collision energy (centre-of-mass frame)
-#Source: Bop and Gacesa 2026, MNRAS 552, 1-8 (doi 10.1093/mnras/stag1696); data doi 10.5281/zenodo.17549249
-#Converted: energy cm-1 -> eV (divide by 8065.541, the conversion used for the source energy grid); cross section Angstrom^2 -> cm^2 (x1e-16)
-#elastic = CO2 stays in its initial rotational level (j=0 -> j'=0)
+#H-CO2 elastic collision cross sections from Bop and Gacesa 2026
 #Energy(eV),sigma(cm^2)
 0.001,1.99671100E-14
 0.002,2.13607800E-14

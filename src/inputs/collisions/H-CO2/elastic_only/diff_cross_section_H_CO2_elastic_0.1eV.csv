@@ -1,8 +1,5 @@
-#H + CO2(j=0) elastic differential cross sections at E = 0.1 eV (collision energy, centre-of-mass frame)
-#Source: Bop and Gacesa 2026, MNRAS 552, 1-8 (doi 10.1093/mnras/stag1696); data doi 10.5281/zenodo.17549249
-#Converted: Angstrom^2/sr -> cm^2/sr (x1e-16); angles 0.1 to 180 degrees in uniform 0.1 degree steps
-#elastic = j=0 -> j'=0 only
-#angle(deg),sigma(cm^2/sr)
+#0.1eV differential cross sections for H-CO2 elastic collisions from Bop and Gacesa 2026
+#angle(deg),sigma(cm^2)
 0.1,4.28813408E-13
 0.2,4.27425425E-13
 0.3,4.25121893E-13
