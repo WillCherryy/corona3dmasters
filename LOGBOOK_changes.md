@@ -66,11 +66,17 @@ Created copies; no original file changed.
 | B1 | Commit the new config files (`_HSA`, `_elastic`, data header fixes) on `test` and push | the commit hash in `run_info.txt` should identify the exact settings used | committed locally 4 Nov 2026 as `bae680c` (8 files); push failed (GitHub needs a personal access token, not a password), push pending |
 | B2 | Review `hsa_smoke` loss rate (same order as LSA ~1.3e25 s^-1) | sanity check before long runs | done 4 Nov 2026: smoke run 131/1000 escaped (13.1%, about +/-9% counting error), loss 6.72e24 s^-1, global 1.027e26 s^-1; LSA baseline_10: 21.4% escaped, loss 1.319e25, global 1.235e26; loss-rate identity holds in both; HSA lower escape is plausible (denser/hotter thermosphere), not yet checked against literature |
 | B3 | 10 x `hsa_baseline_N`, seedless, 100,000 particles | HSA reference set | first launch interrupted 5 Nov 2026: runs 1 and 2 stopped at 13:58 with about 4,300 of 100,000 particles still active (about 95% through); WSL had restarted at 16:02; no results saved (the model has no checkpoints); partial folders to be moved to `runs/interrupted_hsa_*`; relaunch pending after power/sleep settings are rechecked |
-| B4 | H-CO2 elastic at LSA (10 runs) and HSA (10 runs), via `CFGFILE=corona3d_2020_elastic.cfg` (HSA needs a combined HSA + elastic cfg, to be created and diffed first) | effect of the new CO2 data | pending |
-| B5 | Optional: H-CO2 total (summed) variant as a sensitivity | shows size of the elastic-only approximation | pending, user decision |
-| B6 | D as a particle type: mass 2, production from the parent ion, escape energy 0.26 eV at 100 km | needs C++ changes (design together first) | not started |
-| B7 | D-O, D-N2, D-CO data (Zhang-style) | new cross sections | not started |
-| B8 | D-CO2 data | Bop and Gacesa give H + CO2 only; D-CO2 needs its own data or a stated approximation | not started, open question |
+| B4 | H-CO2 (elastic-only, Zhang-consistent) at LSA: 10 runs, labelled `hco2el_lsa_N`, via `CFGFILE=corona3d_2020_elastic.cfg` | effect of the new CO2 data at low solar activity | pending, starts after the six remaining `hsa_baseline` runs finish (user's plan, 5 Nov 2026) |
+| B5 | H-CO2 elastic-only at HSA: 10 runs, `hco2el_hsa_N`; needs a combined config pair (HSA atmosphere + H-CO2 elastic: new `corona3d_2020_HSA_elastic.cfg`, `Hot_H_HSA.cfg`), created from the clean originals and checked line by line with `diff` before any run | effect at high solar activity | pending |
+| B6 | Optional: H-CO2 total (summed over j') variant as a sensitivity at LSA and/or HSA | shows the size of the elastic-only approximation | pending, user decision |
+| B7 | D as a particle type: mass 2, production from the parent ion, escape energy 0.26 eV at 100 km; code changes designed together before editing | start of deuterium work | not started |
+| B8 | D baselines at LSA and HSA (10 runs each). First pass: all four partners use H data as proxies (labelled `dproxy_*`), then replace partner by partner | attributable changes | not started |
+| B9 | D-O, D-N2, D-CO data (Zhang-style) and D-CO2 data (Bop and Gacesa give H + CO2 only; needs separate data or a stated approximation) | new cross sections | not started, D-CO2 open question |
+
+### Comparison with Gregory et al. (2023) (to complete by user from the paper)
+- Our HCO+ DR loss rates: LSA baseline_10 1.32e25 s^-1 (about 9.1e6 cm^-2 s^-1 over 4 pi R^2 with R = 3.39e8 cm); HSA about 6.8e24 s^-1 (about 4.7e6 cm^-2 s^-1) from the first finished runs (5 Nov 2026, not yet the full set).
+- Web summary of the paper: total nonthermal escape is 39% (LSA) and 27% (HSA) of thermal escape, HCO+ DR 30-50% of nonthermal; thermal flux 8.7e7 to 1.1e8 cm^-2 s^-1. These are ratios to thermal, so they are not directly the quantity above. Compare against the paper's own HCO+ DR escape flux for LSA and HSA (table/figure), then record the numbers here.
+- Escape probability tables for both cases are in `src/model_output_data/escape_probabilities_{LSA,HSA}.csv` (probability against altitude for five energies) and can be compared with our own HSA results.
 
 ## C. Housekeeping
 - Stray untracked files `src/hot_h.cfg`, `src/hot_o.cfg`, `src/hot_o.cfg.save` (lowercase, probably created by accident): inspect with `ls -l`, do not commit.
