@@ -99,6 +99,12 @@ Created copies; no original file changed.
 - BUILD EQUIVALENCE TEST: copies `~/check_old` (the 17 Oct executable) and `~/check_new` (rebuilt from the current source), identical `src` otherwise, each made a throwaway git repo (the script needs `git rev-parse`; without it `set -e` aborted the first attempt before the model started, so the first "IDENTICAL" was two empty folders and was discarded). Test: 1,000 particles, seed 123, LSA, original O-H data. RESULT: both give 201 day and 36 night escapes, global rate 1.2352e26, loss rate 1.46371e25; `diff -rq` of the whole `output/` folders (EDF and other files) prints IDENTICAL. The executables differ in 21,712 bytes (7.7%), but the behaviour is bit-identical, so the 17 Oct program matches a fresh build of today's source.
 - CONCLUSION: the model used for all runs is the authors' code with the one typo fix; no unrecorded code difference remains.
 
+### A17. Backup of run data (6-7 Nov 2026)
+- `runs/` (about 442 MB at the time) mirrored to the personal OneDrive folder `/mnt/c/Users/will/OneDrive/corona3d_backups/runs/` by `~/sync_runs.sh`, an hourly `rsync -rt --no-links` loop started with `nohup` from an Ubuntu window (stops if Ubuntu restarts; restart with the same `nohup` line; check with `pgrep -f sync_runs.sh` and `~/sync_last.txt`).
+- Symbolic links in run folders (`Hot_H.cfg`, `Hot_O.cfg`, `inputs`) are skipped on purpose (OneDrive cannot store them); the config used by each run is named in its `run_info.txt`, and the actual files are in the snapshot archive `~/snapshots` and in git.
+- Copies of runs still in progress are partial until the run finishes; later hourly passes update them. The backup never deletes files.
+- Dated `.tgz` archives per milestone are an additional option (see `~/backups`).
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
