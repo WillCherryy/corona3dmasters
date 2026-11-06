@@ -91,6 +91,14 @@ Created copies; no original file changed.
 - PLANNED FIXES (after the current batches finish; do not edit the live files mid-batch): commit the scripts into the repo (e.g. a `tools/` folder on `test`); make `run_sim.sh` also write `git status --porcelain` and an md5 checksum of the executable and of each config used into `run_info.txt`, and copy `Hot_H.cfg` into the run folder instead of linking it; push all commits to GitHub.
 - The run folders, summary CSV and outputs are plain text, so Python analysis and plotting work from them directly (existing `analyse.py`, `timeseries.py`, `verify_runs.py`).
 
+### A16. Code and executable verification (6 Nov 2026)
+- SOURCE vs ORIGINAL: `origin/cpp` = the authors' code (last upstream commit `9a49879`, B. Gregory, Sept 2023) plus ONE commit of ours, `da5756b` (17 Oct 2026): `main.cpp`, `"vel_infle"` -> `"vel_infile"`. `git diff 9a49879 origin/cpp` shows only that line. `test` differs from `cpp` only by added H-CO2 data files (no .cpp/.hpp/makefile change).
+- EXECUTABLE: `src/corona3d_2020` built 17 Oct 2026 16:27 +0100 (about 3 h after the fix commit), before all runs (first baseline 24 Oct); not rebuilt since. One executable produced every run.
+- `Particle.hpp` HISTORY: edited early to repoint the Eigen include path; that edit was lost on 21 Oct by `git reset --hard origin/cpp` (file time stamp 21 Oct 21:48, after the build); the Eigen problem was then solved with a symlink `/opt/local/include/eigen3 -> /usr/include/eigen3` (no source edit). The committed `Particle.hpp` is the authors' original.
+- RUN-TIME SOURCE STATE: every run folder has `code_changes.patch` written by `git -C "$SRC" diff` (line 20 of `run_sim.sh`). All are 0 bytes for baselines 1-10, `hsa_baseline_1` and `hco2el_lsa_1` (others to be checked): no tracked file (code, config or data) had unstaged changes when the run started. Blind spots: staged-but-uncommitted changes and untracked files (planned fix: `git diff HEAD` plus `git status --porcelain`).
+- BUILD EQUIVALENCE TEST: copies `~/check_old` (the 17 Oct executable) and `~/check_new` (rebuilt from the current source), identical `src` otherwise, each made a throwaway git repo (the script needs `git rev-parse`; without it `set -e` aborted the first attempt before the model started, so the first "IDENTICAL" was two empty folders and was discarded). Test: 1,000 particles, seed 123, LSA, original O-H data. RESULT: both give 201 day and 36 night escapes, global rate 1.2352e26, loss rate 1.46371e25; `diff -rq` of the whole `output/` folders (EDF and other files) prints IDENTICAL. The executables differ in 21,712 bytes (7.7%), but the behaviour is bit-identical, so the 17 Oct program matches a fresh build of today's source.
+- CONCLUSION: the model used for all runs is the authors' code with the one typo fix; no unrecorded code difference remains.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
