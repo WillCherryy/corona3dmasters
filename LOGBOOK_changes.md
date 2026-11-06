@@ -59,6 +59,19 @@ Created copies; no original file changed.
 - KNOWN MINOR POINT: HSA profiles begin at 80.4-80.7 km, slightly above the 80 km model bottom; the interpolator holds the lowest tabulated value below the range (no zero or crash); particles are removed at 80 km anyway. Mention in methods.
 - PHYSICS: only the atmosphere changes; model code unchanged.
 
+### A10. HSA baselines `hsa_baseline_1` to `_10` (completed 6 Nov 2026)
+- SETTINGS: HSA via `corona3d_2020_HSA.cfg` and `Hot_H_HSA.cfg`, 100,000 particles, step cap 90,000,000, seedless, original O-H cross sections, commit `bae680c` on branch `test`.
+- HISTORY: first launch on 5 Nov was interrupted at 13:58 when Ubuntu (WSL) went down (restart at 16:02); no results saved, partial folders kept as `runs/interrupted_hsa_1/2`; relaunched as two batches of two (runs 1-5 and 6-10); measured memory about 60 MB per run.
+- STATUS: all ten finished; verification (`verify_runs.py hsa_baseline`) and analysis (`analyse.py hsa_baseline`) outputs to be recorded here.
+
+### A11. Combined HSA + H-CO2 elastic config (6 Nov 2026)
+- WHAT: `src/corona3d_2020_HSA_elastic.cfg` = copy of `corona3d_2020_HSA.cfg` with `bg_part4_config` changed to `./inputs/CO2_Mars_HotH_elastic.cfg`. Checked by `diff` against the HSA config (one line) and against `corona3d_2020_elastic.cfg` (two HSA lines). Committed on `test` as `4e20248`; push to GitHub still pending.
+- WHY: H-CO2 elastic runs are needed at both solar activities. No C++ file differs between `cpp` and `test` on GitHub (checked 6 Nov 2026), so all runs use the same executable behaviour; only data files and configs differ.
+
+### A12. H-CO2 elastic smoke tests (6 Nov 2026, in progress)
+- `smoke_hco2el_lsa` and `smoke_hco2el_hsa`, 1,000 particles each; checks: runs complete, `bg_part4_config` correct in each run folder, escape fraction higher than the O-H baseline (expected, elastic-only), no file-not-found messages.
+- Production sets after the smoke tests: `hco2el_lsa_1..10` and `hco2el_hsa_1..10`, 100,000 particles, seedless, launched from an open Ubuntu window (not through a one-line `wsl bash -c`, which can end background jobs).
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
