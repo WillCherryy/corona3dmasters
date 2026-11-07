@@ -111,6 +111,11 @@ Created copies; no original file changed.
 - ACTION: for `baseline_1..10` and `hsa_baseline_1..10`, copied the link target to `reconstructed_Hot_H.cfg`, the four species configs named in `corona3d_2020.cfg` to `reconstructed_<name>.cfg`, and wrote `reconstructed_settings_note.txt` (source: live files in `src`, unchanged per git history and empty `code_changes.patch`). Also saved a collection in `~/run_configs/` (per-run `corona3d_2020.cfg` and `Hot_H.cfg`, `manifest.txt`, `checksums.txt`). The `hco2el_*` runs get the same treatment after they finish.
 - PLANNED (after the `hco2el` batches finish, B6b): `run_sim.sh` copies `Hot_H.cfg`, `Hot_O.cfg` and the species configs into each run folder at launch instead of linking, and writes checksums of the executable and all configs plus `git status --porcelain` into `run_info.txt`.
 
+### A19. Tools and deuterium design saved in the repository (7 Nov 2026, branch `claude/exciting-keller-mu4f4t`)
+- `tools/check_runs.sh` (read-only status: processes, progress, stalled-run flag, finished counts per set, batch logs, backup loop), `tools/after_finish.sh` (run once after all `hco2el` runs finish: reconstruct settings, fingerprints, empty-patch check, dated archive), `tools/resume_missing.sh lsa|hsa` (only after an interruption: relaunch just the missing run numbers). `bash -n` syntax-checked; not yet run on the user's machine.
+- `docs/DEUTERIUM_PLAN.md`: design for adding D (new `Particle_D`, `Distribution_Hot_D`, `D` branches in `main.cpp` and `Background_Species.cpp`, makefile, configs; D/H and cross-section inputs to decide; regression test V1 with D mass set to H mass must reproduce the seeded H run bit for bit; work in a separate copy/branch, never rebuild in `src` while runs are active).
+- CORRECTION to A18 wording: the HCO+ DR rate coefficient (2.0e-7) is a constant in `Hot_H.cfg`, but `Distribution_Hot_H.cpp` multiplies it by (Te/300)^-1.25 using the electron temperature from the temperature profile, so the DR rate depends on solar activity through the profile files (already switched to HSA); no extra setting needed.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
