@@ -126,7 +126,7 @@ Created copies; no original file changed.
 2. Source the D-O (O-D) cross sections (user does not have them yet): same format as the O-H files, same energy grid (0.1, 1, 5, 10 eV). Checking whether Zhang et al. (2009) or a related paper provides them is the first task.
 3. D base case: O-D data used for all four partners (O, N2, CO, CO2), exactly as the H base case uses O-H for all four. LSA and HSA, 10 runs each.
 4. D with separate D-CO2 data replacing the CO2 stand-in; compare with the D base case (as H base vs H-CO2).
-5. CO2 off / CO2 only sensitivity sets (configuration only, tested A20) for H and for D.
+5. (REMOVED by the user, 7 Nov 2026: the CO2 off / CO2 only sensitivity sets are not part of the plan. The configuration-only method tested in A20 remains available if it is wanted later.)
 - Code work (new particle and source classes, `docs/DEUTERIUM_PLAN.md`) and the regression test V1 (D mass set to H mass must reproduce the H run bit for bit) do not need the O-D data and can be done in a separate copy while the data are sourced; physical D runs cannot start before the tables exist. CORRECTION to A20: the "D base run" is the all-O-D run (like the original H run), not an H-data stand-in.
 
 ## B. Planned changes (in order; update status as done)
