@@ -116,6 +116,11 @@ Created copies; no original file changed.
 - `docs/DEUTERIUM_PLAN.md`: design for adding D (new `Particle_D`, `Distribution_Hot_D`, `D` branches in `main.cpp` and `Background_Species.cpp`, makefile, configs; D/H and cross-section inputs to decide; regression test V1 with D mass set to H mass must reproduce the seeded H run bit for bit; work in a separate copy/branch, never rebuild in `src` while runs are active).
 - CORRECTION to A18 wording: the HCO+ DR rate coefficient (2.0e-7) is a constant in `Hot_H.cfg`, but `Distribution_Hot_H.cpp` multiplies it by (Te/300)^-1.25 using the electron temperature from the temperature profile, so the DR rate depends on solar activity through the profile files (already switched to HSA); no extra setting needed.
 
+### A20. User's workflow plan and the "CO2 off / CO2 only" feasibility test (7 Nov 2026)
+- PLAN (user): finish the H-CO2 elastic runs; implement D; D-O published data for O, N2, CO with D-CO2 data separately and compare; a D base run with D-O data for all partners; then runs for CO and N2 together with the CO2 data for H only and D only, which needs CO2 switched off in some runs.
+- FEASIBILITY, tested in a scratch copy of the code (cloud, 100 test particles, LSA, seed 5, no source change): (1) CO2 OFF: `num_bgparts 3` and comment out `bg_part4_config`; works because the density file columns are O, N2, CO, CO2 and the code reads the first N columns for N species (`Background_Species.cpp`, `num_species` 1..5 branches); run completed (48 of 100 escaped, loss 2.96e25 s^-1, noisy at N = 100). (2) CO2 ONLY: a one-column density file made with `cut -d, -f1,5` (altitude plus the CO2 column), `num_bgparts 1`, `bg_part1_config` = a CO2 species config; run completed (33 of 100 escaped, loss 2.04e25 s^-1). Reference: the full LSA baseline escapes 21%. Both are configuration-only changes. Species order in the config must match the column order of the density file; removing a middle species needs a reordered density file.
+- INTERPRETATION NOTE: removing CO2 changes the atmosphere (CO2 dominates the density at low altitude), so these are sensitivity experiments (which collision partner controls escape), not physical scenarios; label them as such (for example `noCO2_*`, `onlyCO2_*`).
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
