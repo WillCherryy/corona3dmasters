@@ -105,6 +105,12 @@ Created copies; no original file changed.
 - Copies of runs still in progress are partial until the run finishes; later hourly passes update them. The backup never deletes files.
 - Dated `.tgz` archives per milestone are an additional option (see `~/backups`).
 
+### A18. Settings reconstruction in finished run folders (7 Nov 2026)
+- WHY: `Hot_H.cfg` and `Hot_O.cfg` in each run folder are symlinks to the live files in `src` (`ln -s` in `run_sim.sh`), so a run folder does not itself contain the `Hot_H.cfg` it used. (`Hot_O.cfg` is never read in a hot-H run: `dist_type Hot_H` makes `main.cpp` construct only `Distribution_Hot_H`, which opens `Hot_H.cfg`.) The model needs the exact file name `Hot_H.cfg`, so an HSA run's link is named `Hot_H.cfg` but points to `Hot_H_HSA.cfg`; the variant name is recorded in `run_info.txt` (`hoth Hot_H_HSA.cfg`) and by the link target.
+- CHECK (7 Nov 2026): `grep "^temp_prof_filename" runs/*/Hot_H.cfg` shows LSA for all `baseline_N` and `hco2el_lsa_N` and HSA for all `hsa_baseline_N` and `hco2el_hsa_N` (24 folders at that time). A whole-file checksum comparison (expect exactly two distinct `Hot_H.cfg` fingerprints, equal to those of `Hot_H.cfg` and `Hot_H_HSA.cfg`) is to be recorded here.
+- ACTION: for `baseline_1..10` and `hsa_baseline_1..10`, copied the link target to `reconstructed_Hot_H.cfg`, the four species configs named in `corona3d_2020.cfg` to `reconstructed_<name>.cfg`, and wrote `reconstructed_settings_note.txt` (source: live files in `src`, unchanged per git history and empty `code_changes.patch`). Also saved a collection in `~/run_configs/` (per-run `corona3d_2020.cfg` and `Hot_H.cfg`, `manifest.txt`, `checksums.txt`). The `hco2el_*` runs get the same treatment after they finish.
+- PLANNED (after the `hco2el` batches finish, B6b): `run_sim.sh` copies `Hot_H.cfg`, `Hot_O.cfg` and the species configs into each run folder at launch instead of linking, and writes checksums of the executable and all configs plus `git status --porcelain` into `run_info.txt`.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
