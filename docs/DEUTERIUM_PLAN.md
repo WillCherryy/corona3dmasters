@@ -24,14 +24,17 @@ Status: design only. No code has been written. Written 7 Nov 2026 from a read of
 ## 3. Scientific inputs to decide (not code)
 
 - D/H ratio for the parent ion at each altitude (source and justification needed; Mars D/H is enhanced relative to Earth, and differs between the lower atmosphere and the exobase).
-- D-O, D-N2, D-CO collision data (Zhang-style elastic, as for H) and D-CO2 data (Bop and Gacesa give H + CO2 only). First pass: use the H data for all four partners as an explicit stand-in, labelled `dproxy_*`, then replace partner by partner so each change is attributable.
+- **D-O collision data (to be sourced first; user does not have it yet).** The original H runs use the O-H data (Zhang et al. 2009) for ALL four partners (O, N2, CO, CO2). The matching D base run therefore uses O-D data for all four partners, so the D base case is built the same way as the H base case. Needed in the same format as the O-H files: a total cross section table sigma(E) (cm^2, with eV energies) and differential cross sections (angle in degrees, cm^2/sr) at 0.1, 1, 5 and 10 eV, `#` on header lines. Whether Zhang et al. (2009) or a related paper tabulates O-D must be checked in the paper itself; nothing here assumes it does.
+- D-CO2 data (Bop and Gacesa give H + CO2 only): to be sourced or computed separately; it replaces the CO2 stand-in in a second D set so that D base and D with D-CO2 can be compared, as H base and H-CO2 are.
 - Whether D-D, H-D self-collisions matter (see logbook B10).
 
 ## 4. Validation plan
 
 - V1 (regression): build D with the mass temporarily set to 1.00794 amu and DCO+ := HCO+; a seeded run must be bit-identical to the same-seed H run (same method as the build test of 6 Nov 2026). This proves the plumbing.
 - V2: check the energy partition numerically (6.82 eV for D from the 7.31 eV channel, 7.06 eV for H) and that speeds match.
-- V3: short D runs against the proxy data, then 10 runs each at LSA and HSA, analysed like the H sets.
+- V3: once the O-D tables exist, short D runs, then 10 runs each at LSA and HSA with O-D data for all four partners, analysed like the H sets.
+
+Note: the code (section 2) and test V1 do not need the D-O data, because V1 deliberately uses the H data and H mass. Writing and regression-testing the code can proceed in a separate copy while the data are being sourced. Every physical D run needs the O-D tables.
 
 ## 5. Process rules
 
