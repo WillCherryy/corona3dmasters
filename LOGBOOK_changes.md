@@ -175,6 +175,11 @@ Created copies; no original file changed.
 - ISOTOPES: D-CO2 cross sections exceed H-CO2 by up to about 35% at E < 0.1 eV and by less than 9% above 0.1 eV (greater quantum diffraction for H); differences in the differential cross sections are strongly angle dependent, so uniform mass scaling is not valid (so H-CO2 data must not stand in for D-CO2 in final D results).
 - OWN ESTIMATE of the diffraction width, 1/(kR) with k from the reduced mass and R = 3.5 Angstrom: 2.4 degrees (0.1 eV), 0.8 degrees (1 eV), 0.3 degrees (5 eV); consistent in order of magnitude with the tabulated DCS falling by a factor of about 5 within the first degree at 5 eV.
 
+### A29. Reading guide on collisions and the elastic-only assumption (8 Nov 2026)
+- `docs/READING_GUIDE_collisions.md`: the physics with formulas (f = 4 m1 m2/(m1+m2)^2, sigma, sigma_mt, mean fractional energy loss (f/2)(sigma_mt/sigma)), Gregory et al.'s justification quoted step by step, the reasons it may fail for H + CO2 (elastic only 40-55% of the total; forward peak above 90%; large-angle scattering in the inelastic channels; but the O-H stand-in and the summed variant have similar momentum transfer per collision, so the true effect of the stand-in may be modest), the reading list with verification marks, a reading order, and questions for the thesis.
+- Per-collision energy loss at 1 eV for H on CO2 (own illustration): O-H stand-in about 0.96%, elastic channel only about 0.05%, summed over final states about 1.0%.
+- Gregory et al. (2023a) fit the escape probability as p = A exp(-b N sigma) with A = 0.5 + 0.5 alpha (albedo alpha 0.83 at 5 eV, 0.63 at 0.2 eV) and quote about 26 collisions to thermalise a 5 eV H (citing Krasnopolsky 2010).
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
