@@ -226,6 +226,11 @@ Created copies; no original file changed.
 - BUILD (18:22 UTC): `Background_Species.cpp` 18:21:29, `.o` 18:22:42, executable 18:22:42 (correct order). Executable MD5 after the fix `6236607e0c7cc19168171fad600d9507`; saved copy of the executable before the fix `~/corona3d_2020_before_partner_fix`, MD5 `c0c22499908bc6ba3a08378385618e54`, identical to the 17 Oct 2026 executable that produced all earlier runs (same MD5 as `~/check_old/corona3d_2020`). Both files are 280,984 bytes.
 - TO DO: commit on `test`; same-seed test of `run_sim.sh` against `run_sim2.sh` (must give identical output); paired old-versus-fixed runs (5,000 particles, four per arm, baseline and elastic data) in separate copies `~/pair_old` and `~/pair_new`; then decide on launching the fixed H-CO2 sets.
 
+### A37. Commit and push of the partner-selection fix (8 Nov 2026, 18:25 UTC)
+- Commit `cfb928e` on `test`, message "Change code to account for smaller cross sectional area of elastic CO2 collisions" (3 insertions, 3 deletions in `src/Background_Species.cpp`; the body explains that the partner is now chosen with probability sigma_s*n_s / sum(sigma*n)). Pushed: GitHub `test` moved from `4e20248` to `cfb928e`. A mistyped first `git push` line (extra text after `push`) failed harmlessly with "invalid refspec"; the corrected `git push origin test` succeeded.
+- Runs launched before this commit (all `hco2el_*` with commit `4e20248`, and all baselines) used the executable with MD5 `c0c22499...` (density-only partner choice); runs launched from `cfb928e` use `6236607e...` (cross-section-weighted choice).
+- Untracked in `src/` at this point: `run_sim2.sh` (to be committed after its same-seed test), and the stray `hot_h.cfg`, `hot_o.cfg`, `hot_o.cfg.save`.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
