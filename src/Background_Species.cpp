@@ -328,17 +328,17 @@ bool Background_Species::check_collision(shared_ptr<Particle> p, double dt)
 
 		// pick target species for collision
 		u = common::get_rand();
-		double total_dens = 0.0;
+		double total_weight = 0.0;
 		for (int i=0; i<num_species; i++)
 		{
-			total_dens += dens[i];
+			total_weight += total_sig[i]*dens[i];
 		}
 		double frac = 0.0;
 		collision_target = 0;
 
 		do
 		{
-			frac += dens[collision_target] / total_dens;
+			frac += total_sig[collision_target]*dens[collision_target] / total_weight;
 			collision_target++;
 		}
 		while (u >= frac && collision_target < num_species);
