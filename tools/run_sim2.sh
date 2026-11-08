@@ -9,6 +9,7 @@
 # any file in inputs/ are not tracked by git (set ALLOW_DIRTY=1 to override).
 # Optional environment variables: CFGFILE (main config), HOTHFILE (Hot_H config), ALLOW_DIRTY.
 set -e
+set -o pipefail
 LABEL=$1; NP=$2; NS=$3; SEED=$4
 SRC=$(cd "$(dirname "$0")" && pwd)
 CFG=${CFGFILE:-corona3d_2020.cfg}
