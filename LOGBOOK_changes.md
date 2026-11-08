@@ -138,6 +138,12 @@ Created copies; no original file changed.
 - DECISION (user): no redo of the existing runs; the settings are established from run-folder config copies, version control, fingerprints and the reconstructions (A18).
 - STATUS OF H-CO2 ELASTIC SETS: running, four at a time since 6 Nov 2026 12:07 (commit 4e20248); monitoring scripts in `tools/` (A19). Sequence for deuterium: A21.
 
+### A23. The paper's statement on inelastic collisions (quoted by the user, 8 Nov 2026) and what it means for the H-CO2 data
+- QUOTE (Gregory et al. 2023, as supplied by the user): "We neglect inelastic collisions as they are unimportant relative to elastic collisions at the low energies relevant to H scattering through an atmosphere predominantly composed of much heavier species (Lichtenegger et al., 2006)".
+- CONSEQUENCE: running the elastic-only H-CO2 data is consistent with the paper's stated treatment (all partners elastic). The planned inelastic step is therefore a direct test of the paper's assumption for the CO2 partner.
+- TWO READINGS OF "NEGLECT INELASTIC COLLISIONS" for H + CO2 (to be settled against the paper and Lichtenegger et al. 2006): (a) neglect the ENERGY lost to rotation but keep the scattering angles of those collisions (use the summed-over-final-states DCS with the model's elastic kinematics: this is the "total" variant); (b) delete the inelastic collisions altogether (the elastic-channel DCS and sigma only: this is the elastic-only variant now running). The two differ strongly for CO2: at 5 eV the rotationally inelastic cross sections add up to about 52% of the total, and the mean (1 - cos theta) is 0.23 (summed) against 0.011 (elastic channel alone) at 1 eV, giving about 2.3 times the HSA escape rate.
+- ENERGY SCALE OF THE ROTATIONAL TRANSITIONS (own estimate, B(CO2) about 0.39 cm^-1, E = B j'(j'+1)): j' = 2: 0.3 meV; j' = 10: 5 meV; j' = 52: 0.13 eV. At 5 eV the maximum recoil loss to a CO2 target is about 0.44 eV (8.8% of 5 eV), so energy given to rotation is usually small compared with it except for the highest j'. This supports "energy loss to rotation is minor" but does not by itself justify removing the collisions' angular deflection.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
