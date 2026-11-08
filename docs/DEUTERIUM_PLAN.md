@@ -25,7 +25,7 @@ Status: design only. No code has been written. Written 7 Nov 2026 from a read of
 
 - D/H ratio for the parent ion at each altitude (source and justification needed; Mars D/H is enhanced relative to Earth, and differs between the lower atmosphere and the exobase).
 - **D-O collision data (to be sourced first; user does not have it yet).** The original H runs use the O-H data (Zhang et al. 2009) for ALL four partners (O, N2, CO, CO2). The matching D base run therefore uses O-D data for all four partners, so the D base case is built the same way as the H base case. Needed in the same format as the O-H files: a total cross section table sigma(E) (cm^2, with eV energies) and differential cross sections (angle in degrees, cm^2/sr) at 0.1, 1, 5 and 10 eV, `#` on header lines. Whether Zhang et al. (2009) or a related paper tabulates O-D must be checked in the paper itself; nothing here assumes it does.
-- D-CO2 data (Bop and Gacesa give H + CO2 only): to be sourced or computed separately; it replaces the CO2 stand-in in a second D set so that D base and D with D-CO2 can be compared, as H base and H-CO2 are.
+- D-CO2 data: CORRECTION (8 Nov 2026) - Bop and Gacesa (2026) calculated BOTH H-CO2 and D-CO2 (same potential energy surface; abstract: "H/D-CO2 collisions"; D-CO2 cross sections exceed H-CO2 by up to about 35% below 0.1 eV and by less than 9% above 0.1 eV). The files received so far are H-CO2 only, so the D-CO2 state-to-state files should be requested from the authors or looked for in the same data release. They replace the CO2 stand-in in a second D set so that D base and D with D-CO2 can be compared, as H base and H-CO2 are.
 - Whether D-D, H-D self-collisions matter (see logbook B10).
 
 ## 4. Validation plan
