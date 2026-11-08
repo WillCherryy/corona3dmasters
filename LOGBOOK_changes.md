@@ -221,6 +221,11 @@ Created copies; no original file changed.
 - TEST (scratch copy made into a throwaway git repository, 300 particles, elastic config): the clean-tree run completed and stored all of the above (empty patch and status; summary row written; copies read-only); with a tracked source file modified the script refused to run and listed it; with an untracked config chosen it refused and named it. Not yet run on the user's machine.
 - USER DECISION (8 Nov 2026): the user prefers to make the code changes (partner selection and, if wanted, the script) by hand in the repository, not by merging or applying the assistant's patch; the patch and script remain only as references to compare against.
 
+### A36. Partner-selection fix made by the user, by hand, on branch `test` (8 Nov 2026)
+- EDIT (user, `src/Background_Species.cpp`, "pick target species for collision", about lines 328 to 343): `total_dens` replaced by `total_weight`, summing `total_sig[i]*dens[i]`, and the running fraction uses `total_sig[collision_target]*dens[collision_target] / total_weight`. The first attempt left the declaration `double total_dens` unchanged (the code would not have compiled); corrected on line 331 and checked with `grep`.
+- BUILD (18:22 UTC): `Background_Species.cpp` 18:21:29, `.o` 18:22:42, executable 18:22:42 (correct order). Executable MD5 after the fix `6236607e0c7cc19168171fad600d9507`; saved copy of the executable before the fix `~/corona3d_2020_before_partner_fix`, MD5 `c0c22499908bc6ba3a08378385618e54`, identical to the 17 Oct 2026 executable that produced all earlier runs (same MD5 as `~/check_old/corona3d_2020`). Both files are 280,984 bytes.
+- TO DO: commit on `test`; same-seed test of `run_sim.sh` against `run_sim2.sh` (must give identical output); paired old-versus-fixed runs (5,000 particles, four per arm, baseline and elastic data) in separate copies `~/pair_old` and `~/pair_new`; then decide on launching the fixed H-CO2 sets.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
