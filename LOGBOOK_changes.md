@@ -193,6 +193,24 @@ Created copies; no original file changed.
 - CONSEQUENCES: (1) Gregory et al.'s "inelastic atom-molecule collisions are also unimportant at energies below 8 eV (Lammer et al., 2006; Lichtenegger et al., 2006)" traces, for Lichtenegger, to a modelling assumption stated in one sentence; the "8 eV" is the top of the hot-H energy range of that paper's photochemical sources, not a threshold derived for inelastic collisions; (2) Gregory's other support is Lewkow and Kharchenko (2014) for atom-atom collisions only; Lammer et al. (2006), a Venus paper, was not read; (3) so for atom-molecule collisions of H with CO2 the published support is an assumption, and the Bop and Gacesa state-to-state data give a direct quantitative test of it; (4) hard-sphere scattering is isotropic in the centre-of-mass frame (mean 1 - cos theta = 1), the treatment of that earlier Monte Carlo model, which differs strongly from real forward-peaked H-CO2 scattering (A30).
 - CAVEAT: based on text extraction and keyword search of the PDF (33 pages); worth a visual read of the Mars hot-H section and the Venus section.
 
+### A32. FINDING: partner selection ignores the cross sections (8 Nov 2026)
+- CODE (`Background_Species::check_collision`): whether a collision occurs uses tau = sum over species of v dt sigma_s n_s (correct, as in the paper), but WHICH species is hit is chosen with probability n_s / sum n (density only), not sigma_s n_s / sum sigma n. Gregory et al. (2023a) describe the choice as "relative probability based on the contribution of each species to this collision depth", i.e. sigma_s n_s. The two are the same only when all species have the same sigma at the collision energy.
+- BASELINES (O-H data for all four gases): same sigma up to small differences in collision energy per species, so effectively no bias; baselines unaffected.
+- H-CO2 ELASTIC RUNS: sigma(CO2) is 2.6e-15 cm^2 against 4.6e-15 for the O-H data used for O, N2, CO (1 eV), so CO2 is chosen too often. Illustration with the LSA densities, CO2 share of collisions, code against correct (sigma n): 150 km 0.864 vs 0.781, 170 km 0.706 vs 0.575, 200 km 0.336 vs 0.222, 250 km 0.033 vs 0.019. The nearly transparent partner absorbs too many collisions, so the elastic-only escape rate (about 2.3 times the baseline) is biased high by an unknown amount. For the SUMMED variant (sigma 5.5e-15) the bias is the other way and small (CO2 share under-assigned by at most about 4 percentage points).
+- STATUS: found after the H-CO2 elastic runs were launched; the information was in the earlier notes on the code and was not connected to the new cross sections beforehand. The running sets are therefore a first estimate, not final.
+- PROPOSED (not done): in a separate copy, weight the partner choice by sigma_s n_s using the total_sig already computed in the same function; regression test: with all species on identical data the fixed and original executables must agree statistically on the baseline; then quantify the effect with paired same-seed runs on the elastic data (for example 5,000 to 10,000 particles) before deciding whether to stop or repeat the current sets. Do not rebuild in `src` while runs are active.
+
+### A33. Model improvement list, in priority order (8 Nov 2026, proposal, nothing implemented)
+1. Partner selection weighted by sigma n (A32).
+2. Angular sampling weighted by angular spacing, or all tables on uniform grids (A26).
+3. Interpolate sigma(E) and the differential cross sections in energy instead of taking the nearest of 3 to 4 tabulated energies (the H-CO2 data exist at more energies, including 0.34, 4 and 4.6 eV already prepared).
+4. A parameter and assumption register: every input with value, source, status (measured, calculated, assumed), generated from the configs and stored in each run folder.
+5. Partner-specific cross sections for N2 and CO when available; O-D and D-CO2 data for deuterium.
+6. State-resolved inelastic H + CO2 collisions: sample the final rotational level from the state-to-state cross sections, reduce the relative energy by the rotational energy, take the angle from that level's distribution. This is the physically complete treatment; the summed variant (all collisions, elastic kinematics) is an intermediate step; elastic channel only is the literal reading of the paper.
+7. Initial rotational state: the supplied data assume CO2 starts in j = 0, whereas at 200 to 300 K the thermal population extends to j of order 15 to 20; the effect at eV collision energies is probably small but should be stated and checked.
+8. Designed sensitivity runs for the uncertain inputs rather than ad hoc changes.
+- Every change on a branch, with a regression test against the baseline, a logbook entry and the parameter register updated.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
