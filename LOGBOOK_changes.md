@@ -211,6 +211,11 @@ Created copies; no original file changed.
 8. Designed sensitivity runs for the uncertain inputs rather than ad hoc changes.
 - Every change on a branch, with a regression test against the baseline, a logbook entry and the parameter register updated.
 
+### A34. Quick test of the partner-selection fix in a scratch copy (8 Nov 2026, cloud, NOT the user's machine)
+- PATCH: `docs/patches/partner_selection_sigma_weight.patch` (three changed lines in `Background_Species::check_collision`: partner chosen with probability sigma_s n_s / sum(sigma n) using the `total_sig` already computed there). Compiles cleanly.
+- TEST: four runs of 400 test particles, LSA, same seed (11), old executable against fixed executable, O-H baseline data and H-CO2 elastic-only data. RESULTS (escaped of 400, loss rate): baseline old 88 (22.0%, 1.359e25) against fixed 85 (21.3%, 1.312e25), consistent within the counting noise (about +/-10%): the fix leaves the baseline unchanged, as expected when all gases share one cross section. Elastic H-CO2 old 254 (63.5%, 3.92e25) against fixed 202 (50.5%, 3.12e25): the fix lowers the elastic-only loss rate by about 20% (difference 13 percentage points, about 3.7 standard errors even at N = 400). The corrected elastic-only escape fraction (about 50%) is still more than twice the baseline (21%).
+- CAVEATS: small samples; the two runs of each pair use the same seed but their random sequences diverge after the first different partner choice, so they are effectively independent; confirmation needs larger paired runs on the user's machine and the regression check on the real configs.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
