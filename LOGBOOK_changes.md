@@ -180,6 +180,12 @@ Created copies; no original file changed.
 - Per-collision energy loss at 1 eV for H on CO2 (own illustration): O-H stand-in about 0.96%, elastic channel only about 0.05%, summed over final states about 1.0%.
 - Gregory et al. (2023a) fit the escape probability as p = A exp(-b N sigma) with A = 0.5 + 0.5 alpha (albedo alpha 0.83 at 5 eV, 0.63 at 0.2 eV) and quote about 26 collisions to thermalise a 5 eV H (citing Krasnopolsky 2010).
 
+### A30. Lichtenegger et al. (2006) quote and the hierarchy of collision treatments (8 Nov 2026)
+- QUOTE (supplied by the user): "The newly born hot hydrogen atoms are assumed to become eventually thermalized by a series of elastic hard sphere collisions with the background gases such as CO2 or O, while inelastic collisions are negligibly small at these low energies". It is an ASSUMPTION of that model ("are assumed"), with hard-sphere (isotropic in the centre-of-mass frame, mean 1 - cos theta = 1) scattering; only this sentence was read, not the whole paper.
+- CONSEQUENCE: Gregory et al. cite it as support for neglecting inelastic collisions, but it is a modelling assumption, not a calculation for H + CO2; Gregory et al. themselves improved on hard spheres by using the O-H differential cross sections.
+- PER-COLLISION ENERGY LOSS FOR H ON CO2, (f/2)(sigma_mt/sigma) with f = 0.088 (own illustration, mean 1 - cos theta as the model samples it): 1 eV: hard sphere 4.4%, O-H stand-in 0.96%, H-CO2 summed over final states 1.0%, H-CO2 elastic channel only 0.05%. 5 eV: hard sphere 4.4%, O-H stand-in 0.60%, summed 0.40%, elastic only 0.03%. Hard-sphere values for H on O 11.2% and on N2/CO 6.7%.
+- HIERARCHY: hard sphere (Lichtenegger) >> O-H stand-in (Gregory) ~ H-CO2 summed over final states >> H-CO2 elastic channel only. In per-collision energy transfer, Gregory's practical treatment is much closer to the summed H-CO2 variant than to the elastic-channel-only variant; the elastic-only variant is the outlier. This bears on which variant corresponds to the intent of "neglect inelastic collisions" (reading (a) of A23) and supports running the summed variant as the comparison. Decision on the main variant remains the user's.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
