@@ -241,6 +241,12 @@ Created copies; no original file changed.
 - CONTROL: same setup with the CO2 constant set to 2.6e-15 (different from the others): old 68 day and 16 night (loss 1.73e25) against fixed 61 and 14 (loss 1.54e25); the outputs differ. So the test is sensitive: the fix matters only when the cross sections differ.
 - NOT YET DONE ON THE USER'S MACHINE: the same experiment with the real baseline configs (tabulated O-H cross sections for all four gases) should agree statistically, not bit for bit, because the collision energy, and hence the tabulated sigma, differs slightly between gases; the paired old-versus-fixed runs (5,000 particles) measure this.
 
+### A40. Paired old-versus-fixed test on the user's machine (12 Nov 2026, in progress)
+- SET-UP: two copies of the project made by `rsync -a --exclude runs src/` into `~/pair_new` (fixed executable, MD5 `6236607e0c7cc19168171fad600d9507`, built from commit `cfb928e`) and `~/pair_old` (executable before the fix, MD5 `c0c22499908bc6ba3a08378385618e54`, copied from `~/corona3d_2020_before_partner_fix`). Both confirmed by `md5sum`. Equal-cross-section configs built in both copies (`inputs/*_Mars_HotH_eqsig.cfg`, `corona3d_2020_eqsig.cfg`: `total_sigma_file` commented out, all four `total_sigma_default` = 6.4e-15 cm^2; checked by `diff`, four `bg_partN_config` lines change). Each copy turned into a throwaway git repository (commit `b5b21e2`, meaningless outside the test) so that `run_sim2.sh` accepts it.
+- TEST A (bit-identical with equal cross sections): `eqsig_old` and `eqsig_new`, 300 particles, seed 5, LSA; expected identical output, as in the cloud test (A39). RESULT: to be recorded.
+- TEST B (statistical, real baseline configs): `base_1..4` in each copy, 5,000 particles, seedless, LSA; compare the mean total loss rate of the two arms (difference in standard errors). RESULT: to be recorded.
+- WHERE THE OUTPUT IS: every run has its own folder in `~/pair_old/runs/<label>/` or `~/pair_new/runs/<label>/` containing `output/` (about 109 EDF and density files), `console.out`, `run_info.txt` (commit, executable MD5, host), real copies of all configs and inputs, `settings_md5.txt`, and a row in that copy's `runs/summary.csv`. These folders are NOT inside `~/corona3dmasters/src/runs`, so the OneDrive backup loop does not cover them; archive them separately (`tar` into `~/backups` and copy to OneDrive) and save the comparison results as text in `~/pair_test_results/`.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
