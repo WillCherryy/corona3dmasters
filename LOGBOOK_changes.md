@@ -231,6 +231,10 @@ Created copies; no original file changed.
 - Runs launched before this commit (all `hco2el_*` with commit `4e20248`, and all baselines) used the executable with MD5 `c0c22499...` (density-only partner choice); runs launched from `cfb928e` use `6236607e...` (cross-section-weighted choice).
 - Untracked in `src/` at this point: `run_sim2.sh` (to be committed after its same-seed test), and the stray `hot_h.cfg`, `hot_o.cfg`, `hot_o.cfg.save`.
 
+### A38. Check that the partner-selection fix does not double count the cross sections (12 Nov 2026)
+- QUESTION (user): does weighting the partner choice by sigma_s n_s count the cross sections twice? ANSWER: no. In `check_collision` the probability that a collision happens at all is 1 - exp(-tau), tau = sum_s v dt sigma_s n_s, unchanged by the fix; the fix changes only the split among species given that a collision happened, P(s | collision) = sigma_s n_s / sum(sigma n) = tau_s / tau. The probability of a collision with species s is therefore (1 - exp(-tau)) tau_s / tau, i.e. sigma appears once in the total and, normalised, once in the split. Both use the same `total_sig` array computed earlier in the same call.
+- TOY MONTE CARLO (own check, 4 million steps, O with sigma = 4.6e-15 and CO2 with sigma = 2.6e-15 cm^2, densities 1.0e11 and 6.0e10 cm^-3, v dt tau = 1.23): total collision probability 0.7084 for both the old and the new selection (expected 1 - exp(-tau) = 0.7083); CO2/O collision ratio 0.600 with the old density-only split (= the density ratio) and 0.339 with the new split (= the sigma n ratio 0.339, the correct value). So the fix leaves the total unchanged and corrects the split.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
