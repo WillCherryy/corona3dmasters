@@ -257,6 +257,9 @@ Created copies; no original file changed.
 - CONSISTENCY WITH THE 100,000-PARTICLE BASELINES: escape fraction 0.2128 (ten runs, 10-run mean 1.3142e25); the 5,000-particle means are higher by 0.7 percentage points, about 1.8 binomial standard errors, i.e. not significant.
 - CONCLUSION: the fixed code reproduces the baseline behaviour within the noise on the real settings (weak test, n = 2) and is bit-identical to the old code when all cross sections are equal (Test A, A41); the fix therefore changes results only when the cross sections differ. The `diff -rq` line of Test A and its evidence file `~/pair_test_results/testA_equal_sigma.txt` are still to be saved.
 
+### A43. Run register and tools (12 Nov 2026)
+- `docs/RUN_SETS.md`: one table of every label prefix (what it is, old or fixed code, atmosphere, CO2 data, particles, status). `tools/run_register.sh` (read-only, tested on mock run folders) lists every run folder with start time, particles, seed, config, hoth file, commit, executable fingerprint and status (RUNNING, finished, no result). Smoke test of the real configs with `run_sim2.sh` (`smoke2_lsa`, `smoke2_hsa`, commit `e7e1556`, branch `test`, executable `6236607e...`, empty code-change files) passed; the corrected full sets `hco2elfix_lsa_N` and `hco2elfix_hsa_N` (100,000 particles, seedless, four at a time) are launched from commit `e7e1556` once confirmed.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
