@@ -260,6 +260,11 @@ Created copies; no original file changed.
 ### A43. Run register and tools (12 Nov 2026)
 - `docs/RUN_SETS.md`: one table of every label prefix (what it is, old or fixed code, atmosphere, CO2 data, particles, status). `tools/run_register.sh` (read-only, tested on mock run folders) lists every run folder with start time, particles, seed, config, hoth file, commit, executable fingerprint and status (RUNNING, finished, no result). Smoke test of the real configs with `run_sim2.sh` (`smoke2_lsa`, `smoke2_hsa`, commit `e7e1556`, branch `test`, executable `6236607e...`, empty code-change files) passed; the corrected full sets `hco2elfix_lsa_N` and `hco2elfix_hsa_N` (100,000 particles, seedless, four at a time) are launched from commit `e7e1556` once confirmed.
 
+### A44. Corrected elastic H-CO2 sets: interrupted once, relaunched, running (13 to 15 Nov 2026)
+- FIRST LAUNCH (12 Nov 2026) of `hco2elfix_lsa_N` and `hco2elfix_hsa_N` (100,000 particles, seedless, `run_sim2.sh`, commit `e7e1556`, executable `6236607e...`) was lost when the laptop turned off (user's confirmation); `hco2elfix_lsa_1,2` and `hco2elfix_hsa_1,2` were partial, no results, and were moved to `runs/interrupted/`.
+- RELAUNCH (13 Nov 2026): same commands and settings; pre-flight checks passed (nothing running, branch `test`, clean tree apart from the untracked `hot_*` files, `e7e1556` on GitHub, executable MD5 `6236607e0c7cc19168171fad600d9507`); power settings (standby and hibernate off on mains, charger in, lid action) set before launch. Two queues of two (LSA and HSA), four runs at a time, `nice -n 10`.
+- STATUS 15 Nov 2026: user confirms the runs are still going. Rule while the sets run: no branch changes, edits to tracked files or rebuilds in `src` (the new-run safety check would refuse to start queued runs); development of the inelastic treatment goes in a separate copy.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
