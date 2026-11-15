@@ -265,6 +265,12 @@ Created copies; no original file changed.
 - RELAUNCH (13 Nov 2026): same commands and settings; pre-flight checks passed (nothing running, branch `test`, clean tree apart from the untracked `hot_*` files, `e7e1556` on GitHub, executable MD5 `6236607e0c7cc19168171fad600d9507`); power settings (standby and hibernate off on mains, charger in, lid action) set before launch. Two queues of two (LSA and HSA), four runs at a time, `nice -n 10`.
 - STATUS 15 Nov 2026: user confirms the runs are still going. Rule while the sets run: no branch changes, edits to tracked files or rebuilds in `src` (the new-run safety check would refuse to start queued runs); development of the inelastic treatment goes in a separate copy.
 
+### A45. Instrumented test in the real code: expected against actual collisions per species (15 Nov 2026, scratch copies in the cloud)
+- METHOD: in scratch copies of the old code (density-only choice) and the fixed code (sigma n choice), counters were added to `check_collision`: for every step, EXPECTED collisions of species s += (1 - exp(-tau)) * tau_s / tau, with tau_s = v dt sigma_s n_s (the physical per-species rate, one sigma); ACTUAL collisions of species s += 1 each time species s is chosen. Printed at program end. LSA, 400 test particles, seed 21, species 0 to 3 = O, N2, CO, CO2.
+- BASELINE (O-H data, one cross section for all gases): old code, expected against actual: O 3954/3923, N2 5371/5374, CO 1477/1485, CO2 121210/121901, total 132011/132683. Fixed code: O 4116/4127, N2 5583/5625, CO 1535/1636, CO2 125778/125547, total 137013/136935. Both agree within noise: with equal cross sections the old choice is correct.
+- ELASTIC H-CO2 DATA (CO2 cross section smaller than the others): FIXED code expected/actual: O 26885/26974, N2 59307/59168, CO 17327/17517, CO2 1134069/1133176, total 1237588/1236835 (all within 1%). OLD code: O 53832/34248 (actual 36% below expected), N2 134957/85877 (36% below), CO 39877/25761 (35% below), CO2 2696253/2777480 (3% above), total 2924919/2923366. So the old code gets the TOTAL number of collisions right (the CO2 cross section is used in tau) but assigns about 36% too few of them to O, N2 and CO and too many to CO2.
+- CONCLUSION: confirms in the real code the finding of A32, and answers the "double counting" question: after the fix each species receives exactly the collisions its own sigma n v dt predicts (one sigma per species), and the total is unchanged.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
