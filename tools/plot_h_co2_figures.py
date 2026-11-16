@@ -250,8 +250,13 @@ def panel_levels_bar(ax, r, ylabel=True):
         ax.set_ylabel(r"cross section $\sigma_{j'}$ (cm$^2$)")
     ax.set_title(f"Cross section by final level at {r['E']:g} eV", fontsize=11, fontweight="bold")
     tot = r["sig_total_levels"]
-    ax.text(0.97, 0.93, f"elastic: {r['sig_lv'][0] / tot:.1%} of all collisions\n$j'=2$: {r['sig_lv'][1] / tot:.1%}",
-            transform=ax.transAxes, ha="right", va="top", fontsize=9)
+    thr = 0.01 * A2_TO_CM2                      # authors' convergence limit: state-to-state cross sections above 0.01 Angstrom^2 are converged
+    if s.min() < thr < s.max():
+        ax.axhline(thr, color="#777777", lw=0.9, ls=":")
+    ax.text(0.97, 0.93, f"elastic: {r['sig_lv'][0] / tot:.1%} of all collisions\n$j'=2$: {r['sig_lv'][1] / tot:.1%}\n"
+            "dotted: 0.01 $\\AA^2$ convergence limit",
+            transform=ax.transAxes, ha="right", va="top", fontsize=9, zorder=6,
+            bbox=dict(fc="white", ec="none", pad=1.5, alpha=0.9))
 
 
 def panel_levels_cum(ax, r, legend=False, ylabel=True):
