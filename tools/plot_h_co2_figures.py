@@ -17,7 +17,7 @@ Without it the script still runs, but the 5 eV numbers are incomplete and a warn
 
 Output (in the output folder):
     h_co2_ALL.png (and .pdf)       every panel in ONE picture
-    h_co2_SUMMARY.png (and .pdf)   the three summary panels on their own (cross sections, how often, how much deflection)
+    h_co2_SUMMARY.png (and .pdf)   six-panel summary: cross sections, how often, how much deflection; cross section by final level at each energy
     separate/<name>.png            every panel as its own picture
     h_co2_numbers.csv              the numbers behind the figures
 
@@ -241,6 +241,11 @@ def panel_levels_bar(ax, r, ylabel=True):
 def panel_levels_cum(ax, r, legend=False, ylabel=True):
     ax.step(r["levels"], r["cum_sig"] * 100, where="post", color=GREY, lw=1.8, label="collisions")
     ax.step(r["js"], r["cum_mt"] * 100, where="post", color=ORANGE, lw=2.0, label="momentum transfer")
+    if r["missing"] > 0:
+        hi_lv = r["levels"][r["levels"] > JMAX_FILES]
+        est = np.cumsum(r["sig_lv"][r["levels"] > JMAX_FILES] * r["c_mid"]) / r["mt_tot"]["mid"] + r["cum_mt"][-1]
+        ax.step(np.r_[JMAX_FILES, hi_lv], np.r_[r["cum_mt"][-1], est] * 100, where="post", color=ORANGE, lw=2.0, ls="--",
+                label="momentum transfer (estimated)")
     ax.axhline(90, color="#999999", lw=0.8, ls=":")
     ax.set_xlim(-2, r["levels"].max() + 2); ax.set_ylim(0, 102)
     ax.set_xlabel("final rotational level $j'$ (cumulative up to)")
@@ -325,14 +330,16 @@ def make_combined(out, E_tab, S_tot, S_el, res, pdf):
 
 
 def make_summary(out, E_tab, S_tot, S_el, res, pdf):
-    fig, axes = plt.subplots(1, 3, figsize=(15.5, 4.9), gridspec_kw=dict(wspace=0.32))
-    panel_xsec(axes[0], E_tab, S_tot, S_el, res)
-    panel_share_collisions(axes[1], res)
-    panel_share_momentum(axes[2], res)
+    fig = plt.figure(figsize=(15.5, 9.6))
+    gs = fig.add_gridspec(2, 3, hspace=0.5, wspace=0.32)
+    panel_xsec(fig.add_subplot(gs[0, 0]), E_tab, S_tot, S_el, res)
+    panel_share_collisions(fig.add_subplot(gs[0, 1]), res)
+    panel_share_momentum(fig.add_subplot(gs[0, 2]), res)
+    for k, r in enumerate(res):
+        panel_levels_bar(fig.add_subplot(gs[1, k]), r, ylabel=(k == 0))
     fig.suptitle("H + CO$_2$: elastic against rotationally inelastic collisions "
-                 "(Bop and Gacesa 2026 data, CO$_2$ initially in $j=0$)", fontsize=12.5, y=1.03)
+                 "(Bop and Gacesa 2026 data, CO$_2$ initially in $j=0$)", fontsize=12.5, y=0.97)
     save(fig, out / "h_co2_SUMMARY", pdf)
-
 
 def make_separate(out, E_tab, S_tot, S_el, res, pdf):
     sep = out / "separate"

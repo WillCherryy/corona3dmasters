@@ -344,3 +344,8 @@ Created copies; no original file changed.
 ## C. Housekeeping
 - Stray untracked files `src/hot_h.cfg`, `src/hot_o.cfg`, `src/hot_o.cfg.save` (lowercase, probably created by accident): inspect with `ls -l`, do not commit.
 - Keep `smoke`/test runs out of analyses (different label prefix).
+
+## A54 (16 Nov 2026) - six-panel summary, 5 eV cumulative curve, high-j' tail
+- `h_co2_SUMMARY.png` is now six panels: cross sections vs energy, how often, how much deflection (top); cross section by final level at 0.1, 1, 5 eV (bottom).
+- 5 eV cumulative momentum-transfer curve ended at j'=52 only because the angle files (E*-DCS.txt) stop there; the script integrated only levels with angle distributions. It now continues as a DASHED ESTIMATE to j'=140 using the state-to-state cross sections times the mean (1-cos theta)=0.51 of the top levels present. Solid = computed from angle files; dashed = estimate (same assumption as the asterisked 2.7% figure).
+- Alternating tail at 5 eV (j' >~ 120, .res values e.g. j'=134: 3.5e-3, 136: 8.3e-3, 138: 2.0e-3, 140: 8.3e-3 Angstrom^2): even/odd-jf alternation with growing amplitude, not a smooth physical trend. j'=140 (about 0.95 eV of rotational energy) is far below the 5 eV collision energy, so it is not an energy cutoff; consistent with the edge of the rotational basis / convergence limit of the calculation (cause not confirmed; ask authors). Levels j'>=120 hold 0.14% of collisions, so it does not affect any quoted number.
