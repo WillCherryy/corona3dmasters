@@ -149,7 +149,9 @@ def load_all(folder):
         top = sorted(m1)[-5:]
         c_mid = float(np.mean([m1[j] for j in top])) if missing > 0.001 * sig_total_levels else 0.0
         mt52 = sum(mt.values())
-        mt_tot = {k: mt52 + missing * c for k, c in (("lo", 0.5 * c_mid), ("mid", c_mid), ("hi", 1.5 * c_mid))}
+        # momentum transfer of the missing levels (j' > 52) is not in the angle files. Hard bounds that need NO assumption:
+        # the mean (1 - cos theta) of any level lies between 0 and 2, so  lo: 0  /  mid: ESTIMATE c_mid  /  hi: 2.
+        mt_tot = {k: mt52 + missing * c for k, c in (("lo", 0.0), ("mid", c_mid), ("hi", 2.0))}
         e_lab = e * (M_PROJ + M_CO2) / M_CO2
         recoil = {k: 0.5 * F_RECOIL * (mt_tot[k] / sig_total_levels) * e_lab for k in mt_tot}              # eV per collision
         mean_rot = float(sum(sig_all[j] * B_ROT_EV * j * (j + 1) for j in levels) / sig_total_levels)   # eV per collision
@@ -201,12 +203,14 @@ def panel_xsec(ax, E_tab, S_tot, S_el, res):
     ax.legend(frameon=False, fontsize=8.5)
 
 
-def _share_bars(ax, el_pct, ylabel, title, legend, flags=None):
+def _share_bars(ax, el_pct, ylabel, title, legend, flags=None, bounds=None):
     x = np.arange(len(el_pct))
     ax.bar(x, el_pct, color=BLUE, width=0.6, label="elastic")
     ax.bar(x, 100 - el_pct, bottom=el_pct, color=ORANGE, width=0.6, label="inelastic")
     for i, v in enumerate(el_pct):
         star = "*" if flags is not None and flags[i] else ""
+        if bounds is not None and flags[i]:
+            ax.errorbar(i, v, yerr=[[v - bounds[i][0]], [bounds[i][1] - v]], color="#222222", lw=1.2, capsize=4, zorder=5)
         if v > 12:
             ax.text(i, v / 2, f"{v:.0f}%{star}", ha="center", va="center", color="white", fontweight="bold")
         else:
@@ -227,12 +231,13 @@ def panel_share_collisions(ax, res, legend=True):
 def panel_share_momentum(ax, res, legend=False):
     el = np.array([r["share_el_mt"]["mid"] for r in res]) * 100
     flags = [r["missing_frac"] > 0.005 for r in res]
-    _share_bars(ax, el, "share of momentum transfer (%)", "How much deflection (momentum transfer)", legend, flags)
-    if any(flags):
-        r5 = [r for r in res if r["missing_frac"] > 0.005][-1]
-        ax.text(0.5, -0.2, f"* {r5['E']:g} eV: levels above $j'=52$ ({r5['missing_frac']:.1%} of collisions) are not in the angle files;\n"
-                f"momentum transfer estimated, elastic share {r5['share_el_mt']['hi']:.1%} to {r5['share_el_mt']['lo']:.1%}",
-                transform=ax.transAxes, ha="center", va="top", fontsize=8, color="#555555")
+    bounds = [(r["share_el_mt"]["hi"] * 100, r["share_el_mt"]["lo"] * 100) for r in res]       # (smallest, largest) possible share
+    _share_bars(ax, el, "share of momentum transfer (%)", "How much deflection (momentum transfer)", legend, flags, bounds)
+    lines = [f"* {r['E']:g} eV: levels above $j'=52$ ({r['missing_frac']:.1%} of collisions) are not in the angle files; value = estimate,\n"
+             f"   whisker = hard bounds {r['share_el_mt']['hi']:.1%} to {r['share_el_mt']['lo']:.1%} (missing levels transfer 0 to the maximum)"
+             for r in res if r["missing_frac"] > 0.005]
+    if lines:
+        ax.text(0.5, -0.2, "\n".join(lines), transform=ax.transAxes, ha="center", va="top", fontsize=7.6, color="#555555")
 
 
 def panel_levels_bar(ax, r, ylabel=True):
@@ -279,11 +284,12 @@ def panel_energy(ax, res):
     rec = np.array([r["recoil"]["mid"] for r in res]) * 1000
     lo = np.array([r["recoil"]["lo"] for r in res]) * 1000
     hi = np.array([r["recoil"]["hi"] for r in res]) * 1000
-    ax.bar(x - wd / 2, rec, wd, color=BLUE, label="recoil (elastic kinematics)",
+    ax.bar(x - wd / 2, rec, wd, color=BLUE, label="recoil (elastic kinematics; whisker = hard bounds)",
            yerr=[rec - lo, hi - rec], error_kw=dict(ecolor="#222222", lw=1, capsize=3))
     ax.bar(x + wd / 2, rot, wd, color=ORANGE, label="rotational excitation of CO$_2$")
-    for xi, v, h in zip(x - wd / 2, rec, hi):
-        ax.text(xi + 0.03, h * 1.03 + 0.2, f"{v:.1f}", ha="center", va="bottom", fontsize=9)
+    for xi, v in zip(x - wd / 2, rec):
+        ax.text(xi - 0.02, v, f"{v:.1f}", ha="center", va="bottom", fontsize=9, zorder=6,
+                bbox=dict(fc="white", ec="none", pad=0.6, alpha=0.85))
     for xi, v in zip(x + wd / 2, rot):
         ax.text(xi, v * 1.03 + 0.2, f"{v:.1f}", ha="center", va="bottom", fontsize=9)
     ax.set_xticks(x); ax.set_xticklabels([f"{r['E']:g} eV" for r in res])
@@ -303,11 +309,12 @@ def panel_table(ax, res):
         lines.append(f"{r['E']:>6g}eV  {r['share_el_coll']:>11.1%} {r['share_el_mt']['mid']:>11.1%}{star}  "
                      f"{j90:>16}  {r['mean_rot'] * 1000:>8.1f} / {r['recoil']['mid'] * 1000:<8.1f}")
     lines += ["", "* the angle files stop at j' = 52; at 5 eV the levels above hold "
-              f"{res[-1]['missing_frac']:.1%} of the collisions.",
-              "  Their momentum transfer is estimated (mean 1-cos theta of the top levels present, range 0.5x to 1.5x).",
+              + ", ".join(f"{r['missing_frac']:.1%} at {r['E']:g} eV" for r in res if r["missing_frac"] > 0.005) + " of the collisions.",
+              "  Their momentum transfer is ESTIMATED (mean 1-cos theta of the top 5 levels present); whiskers/ranges are",
+              "  hard bounds: the missing levels transfer 0 to the maximum possible (mean 1-cos theta = 2).",
               "Elastic share of collisions: authors' elastic / total tables (every level).",
               "Rotation: sum_j' sigma_j' B j'(j'+1) / sum sigma_j' over every level, B = 0.39 cm-1 (approx.).",
-              "Recoil: (f/2) <1 - cos theta> E_lab, f = " + f"{F_RECOIL:.4f}" + " (bar: range of the estimate). Both are estimates."]
+              "Recoil: (f/2) <1 - cos theta> E_lab, f = " + f"{F_RECOIL:.4f}" + " (whisker: hard bounds). Both are estimates."]
     ax.text(0.0, 1.0, "\n".join(lines), transform=ax.transAxes, va="top", ha="left", family="monospace", fontsize=8.4)
 
 
@@ -389,9 +396,9 @@ def make_separate(out, E_tab, S_tot, S_el, res, pdf):
 def write_numbers(out, res):
     with open(out / f"{prefix()}_numbers.csv", "w") as f:
         f.write("E_eV,sigma_elastic_table_cm2,sigma_total_table_cm2,sum_over_all_levels_cm2,fraction_in_levels_above_52,"
-                "elastic_share_of_collisions,elastic_share_of_momentum_central,elastic_share_of_momentum_low_assumption,"
-                "elastic_share_of_momentum_high_assumption,j_for_90pct_momentum,mean_rotational_energy_meV,"
-                "mean_recoil_energy_meV_central,mean_recoil_energy_meV_low,mean_recoil_energy_meV_high,"
+                "elastic_share_of_collisions,elastic_share_of_momentum_central,elastic_share_of_momentum_hard_min,"
+                "elastic_share_of_momentum_hard_max,j_for_90pct_momentum,mean_rotational_energy_meV,"
+                "mean_recoil_energy_meV_central,mean_recoil_energy_meV_floor,mean_recoil_energy_meV_hard_max,"
                 "max_deviation_angle_integral_vs_state_to_state\n")
         for r in res:
             j90 = r["j90"] if r["j90"] is not None else ">52"
