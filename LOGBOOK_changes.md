@@ -278,6 +278,13 @@ Created copies; no original file changed.
 - EVIDENCE: toy Monte Carlo (A38), equal-cross-section bit-identical test (A39, A41), instrumented expected-versus-actual collision counts per species in the real code (A45): fixed code within about 1% for every species; old code about 36% too few collisions for O, N2 and CO with the elastic H-CO2 data, with the total correct.
 - FOR THE WRITE-UP: the old choice gave every gas the density-weighted average cross section instead of its own; the correction does not change the total collision frequency, the cross-section data or the scattering of any single collision, but it changes the mix of collision partners, and each partner has its own mass and angular distribution, so it changes the results when the cross sections differ (about 20% lower elastic loss rate in a 400-particle test).
 
+### A47. Figure: elastic against inelastic H + CO2 collisions at 0.1, 1 and 5 eV (16 Nov 2026)
+- FILES (branch `claude/exciting-keller-mu4f4t`): `docs/figures/h_co2_elastic_vs_inelastic.png` and `.pdf`, the numbers in `docs/figures/h_co2_elastic_vs_inelastic_numbers.csv`, and the script `tools/plot_elastic_vs_inelastic.py` (reads `src/inputs/collisions/H-CO2/`: the summed-over-final-levels files and the elastic-only files; inelastic = total minus elastic).
+- PANELS: top row, differential cross sections against angle (log axes, elastic j' = 0, inelastic all j' > 0, total, 2 degree forward-peak mark); bottom row, cross sections against energy (authors' total and elastic tables), share of collisions, share of momentum transfer.
+- RESULT: elastic is 61.0%, 47.5% and 47.2% of all collisions at 0.1, 1 and 5 eV (sigma_el 5.28e-15, 2.61e-15, 2.25e-15 cm^2; sigma_tot 8.65e-15, 5.50e-15, 4.76e-15) but only 4.8%, 2.2% and 3.1% of the momentum transfer. Mean (1 - cos theta): elastic 0.022, 0.011, 0.006; inelastic 0.678, 0.429, 0.169; total 0.278, 0.231, 0.090. The elastic channel dominates below about 2 degrees (by a factor of about 100 at 0.1 eV at small angles); above roughly 10 degrees the inelastic channels carry almost all of the scattering.
+- CAVEATS: the summed angle files stop at j' = 52, so the inelastic part is about 3 to 4% low at 4 to 5 eV; CO2 starts in j = 0 only; cross sections against energy use the authors' tables while the angle panels use the summed files; the raw per-level files were not available when the figure was made, so there is no breakdown by final level (that can be added from the raw `E*-DCS.txt` files).
+- USE: justification for including the inelastic H-CO2 channels: about half of the collisions are inelastic and they carry about 95 to 98% of the momentum transfer.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
