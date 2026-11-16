@@ -305,6 +305,11 @@ Created copies; no original file changed.
 - INDIRECT EVIDENCE of no corruption: the angle integrals of the elastic blocks agree with the elastic cross-section table to 0.01% (A24), and the sum of all 27 blocks equals the authors' total cross section to 0.01% at 0.1 and 1 eV (0.971 at 5 eV, explained by the cut at j' = 52, A48).
 - DEFINITIVE CHECK (user, pending): compare the user's files on `D:\MASTERS\Archive\H-CO2` with the files inside the Zenodo `Archive.zip` by MD5 (inline PowerShell, step 1); publish only if all four are identical. Result to be recorded here.
 
+### A52. Raw files verified against the Zenodo original; D-CO2 data exist in the same record (16 Nov 2026)
+- VERIFICATION (assistant, direct download of `Archive.zip` from Zenodo 17549249, 135,546,983 bytes, MD5 `e1ebc4637a175a5bd142a6512697e551`, matches the record): the four files the user supplied as "fresh" (`H-CO2_total_and_elastic_CS.out`, `E0.10-DCS.txt`, `E1.00-DCS.txt`, `E5.00-DCS.txt`) have MD5 `18347d52...`, `3d8d5d3c...`, `0aebd1c1...`, `03b626ac...`, identical to each other with the files received earlier in the session, and BYTE-IDENTICAL to the originals inside the archive: `Archive/H-CO2/H-CO2_total_and_elastic_CS.out` and, inside `Archive/H-CO2/H-CO2_DCS.zip`, `DCS_CO2-H/E0.10-DCS.txt`, `E1.00-DCS.txt`, `E5.00-DCS.txt`. So the user's earlier copies were not modified.
+- CONTENTS OF THE ARCHIVE (9 entries): `Archive/H-CO2/` (`H-CO2_DCS.zip` with 150 energy files `DCS_CO2-H/E0.001-DCS.txt` ... `E5.00-DCS.txt` plus a README, `H-CO2_total_and_elastic_CS.out`, `H-CO2_state-to-state_CS.res` 22.3 MB) and the same three for `Archive/D-CO2/` (`D-CO2_DCS.zip` with 150 files `DCS_CO2-D/...`, `D-CO2_total_and_elastic_CS.out`, `D-CO2_state-to-state_CS.res` 22.9 MB).
+- CONSEQUENCES: (1) D + CO2 cross sections in the same format as H + CO2 are publicly available (CC BY 4.0), which settles the D-CO2 question in A28 and the deuterium plan; (2) 150 collision energies are available per isotope, so the energy interpolation (A33, item 3) can use the full set instead of 3 energies; (3) the file format is the same, so the same conversion and plotting scripts apply.
+
 ## B. Planned changes (in order; update status as done)
 
 | # | Step | Reason / goal | Status |
