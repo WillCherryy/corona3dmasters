@@ -21,15 +21,21 @@ Output (in the output folder):
     h_co2_SUMMARY.png (and .pdf)   six-panel summary: cross sections, how often, how much deflection; cross section by final level at each energy
     separate/<name>.png            every panel as its own picture
     h_co2_numbers.csv              the numbers behind the figures
+  with --compare (H and D together; needs every angle file, i.e. H-CO2_DCS.zip and D-CO2_DCS.zip or their contents):
+    compare_H_D_cross_sections.png     total and elastic cross sections of H and D, and the isotope difference
+    transport_cross_section_H_D.png    momentum-transfer cross section against energy (low energies and the whole range)
+    transport_cross_sections.csv       its numbers at all 149 energies
 
 Examples (PowerShell on Windows):
     py plot_h_co2_figures.py --data "D:\\MASTERS\\Archive\\H-CO2" --out "D:\\MASTERS\\Figures"
     py plot_h_co2_figures.py --data "D:\\MASTERS\\Archive\\H-CO2" --out "D:\\MASTERS\\Figures" --mode combined --pdf
     py plot_h_co2_figures.py --system D --data "D:\\MASTERS\\Archive\\D-CO2" --out "D:\\MASTERS\\Figures_D" --pdf   (files are then named d_co2_*)
+    py plot_h_co2_figures.py --compare --data-h "D:\\MASTERS\\Archive\\H-CO2" --data-d "D:\\MASTERS\\Archive\\D-CO2" --out "D:\\MASTERS\\Figures_compare" --pdf
 """
 import argparse
 import re
 import sys
+import zipfile
 from pathlib import Path
 
 import numpy as np
@@ -40,7 +46,7 @@ import matplotlib.pyplot as plt
 # ----------------------------------------------------------------------------------------------------------
 # constants and style
 # ----------------------------------------------------------------------------------------------------------
-BLUE, ORANGE, GREY = "#0072B2", "#D55E00", "#444444"
+BLUE, RED, GREY = "#1F5FA8", "#D62728", "#444444"          # blue = elastic (and D), red = inelastic (and H)
 A2_TO_CM2 = 1e-16                          # Angstrom^2 -> cm^2
 CM1_TO_EV = 1.0 / 8065.541
 B_ROT_EV = 0.39022 * CM1_TO_EV             # CO2 rotational constant (approximate), eV
@@ -116,12 +122,17 @@ def integrate(angle_deg, dcs, weight=None):
     return 2 * np.pi * (body + np.sum(0.5 * (g[1:] + g[:-1]) * np.diff(tt)))
 
 
-def load_all(folder):
+def read_table(folder):
+    """The authors' total and elastic cross-section table: energy (eV), total and elastic cross section (cm^2)."""
     cs_path = find_file(folder, f"{SYS}-CO2_total_and_elastic_CS", {".out", ".txt", ".dat"})
     rows = [l.split() for l in open(cs_path).read().splitlines()[1:] if l.strip()]
-    E_tab = np.array([float(r[0]) for r in rows]) * CM1_TO_EV
-    S_tot = np.array([float(r[2]) for r in rows]) * A2_TO_CM2
-    S_el = np.array([float(r[3]) for r in rows]) * A2_TO_CM2
+    return (np.array([float(r[0]) for r in rows]) * CM1_TO_EV,
+            np.array([float(r[2]) for r in rows]) * A2_TO_CM2,
+            np.array([float(r[3]) for r in rows]) * A2_TO_CM2)
+
+
+def load_all(folder):
+    E_tab, S_tot, S_el = read_table(folder)
     s2s_path = find_file(folder, f"{SYS}-CO2_state-to-state", {".res"}, required=False)
     s2s = read_state_to_state(s2s_path, [e for _, e in ENERGY_FILES]) if s2s_path else None
     if s2s is None:
@@ -179,7 +190,7 @@ def panel_dcs(ax, r, legend=False, ylabel=True):
     me, mi = r["d_el"] > lo, r["d_in"] > lo
     ax.plot(r["ang"], r["d_tot"], color=GREY, lw=1.6, ls="--", label="total (sum of $j'\\leq52$)")
     ax.plot(r["ang"][me], r["d_el"][me], color=BLUE, lw=2.0, label="elastic ($j'=0$)")
-    ax.plot(r["ang"][mi], r["d_in"][mi], color=ORANGE, lw=2.0, label="inelastic (sum of $2\\leq j'\\leq52$)")
+    ax.plot(r["ang"][mi], r["d_in"][mi], color=RED, lw=2.0, label="inelastic (sum of $2\\leq j'\\leq52$)")
     ax.axvline(2.0, color="#999999", lw=0.9, ls=":")
     ax.set_xscale("log"); ax.set_yscale("log"); ax.set_xlim(0.1, 180); ax.set_ylim(lo, r["d_tot"].max() * 3)
     ax.set_xticks([0.1, 1, 10, 100]); ax.set_xticklabels(["0.1", "1", "10", "100"])
@@ -195,7 +206,7 @@ def panel_dcs(ax, r, legend=False, ylabel=True):
 def panel_xsec(ax, E_tab, S_tot, S_el, res):
     ax.loglog(E_tab, S_tot, color=GREY, lw=1.6, ls="--", label="total")
     ax.loglog(E_tab, S_el, color=BLUE, lw=2.0, label="elastic")
-    ax.loglog(E_tab, S_tot - S_el, color=ORANGE, lw=2.0, label="inelastic (total $-$ elastic)")
+    ax.loglog(E_tab, S_tot - S_el, color=RED, lw=2.0, label="inelastic (total $-$ elastic)")
     for r in res:
         ax.axvline(r["E"], color="#999999", lw=0.8, ls=":")
     ax.set_xlabel("collision energy (eV)"); ax.set_ylabel(r"cross section (cm$^2$)")
@@ -206,7 +217,7 @@ def panel_xsec(ax, E_tab, S_tot, S_el, res):
 def _share_bars(ax, el_pct, ylabel, title, legend, flags=None, bounds=None):
     x = np.arange(len(el_pct))
     ax.bar(x, el_pct, color=BLUE, width=0.6, label="elastic")
-    ax.bar(x, 100 - el_pct, bottom=el_pct, color=ORANGE, width=0.6, label="inelastic")
+    ax.bar(x, 100 - el_pct, bottom=el_pct, color=RED, width=0.6, label="inelastic")
     for i, v in enumerate(el_pct):
         star = "*" if flags is not None and flags[i] else ""
         if bounds is not None and flags[i]:
@@ -214,7 +225,7 @@ def _share_bars(ax, el_pct, ylabel, title, legend, flags=None, bounds=None):
         if v > 12:
             ax.text(i, v / 2, f"{v:.0f}%{star}", ha="center", va="center", color="white", fontweight="bold")
         else:
-            ax.text(i, v + 3.5, f"{v:.1f}%{star}", ha="center", va="bottom", color=BLUE, fontweight="bold", fontsize=9)
+            ax.text(i, v + 3.5, f"{v:.1f}%{star}", ha="center", va="bottom", color="white", fontweight="bold", fontsize=9)
         ax.text(i, v + (100 - v) / 2 if v <= 88 else 100 - 4, f"{100 - v:.0f}%", ha="center", va="center",
                 color="white", fontweight="bold")
     ax.set_xticks(x); ax.set_xticklabels(["0.1 eV", "1 eV", "5 eV"]); ax.set_ylim(0, 100); ax.grid(False)
@@ -243,7 +254,7 @@ def panel_share_momentum(ax, res, legend=False):
 def panel_levels_bar(ax, r, ylabel=True):
     keep = r["sig_lv"] > 1e-8 * r["sig_lv"][0]
     lv, s = r["levels"][keep], r["sig_lv"][keep]
-    ax.bar(lv, s, width=1.7, color=[BLUE if j == 0 else ORANGE for j in lv])
+    ax.bar(lv, s, width=1.7, color=[BLUE if j == 0 else RED for j in lv])
     ax.set_yscale("log"); ax.set_xlim(-2, lv.max() + 2); ax.set_ylim(s.min() * 0.5, s.max() * 2.5)
     ax.set_xlabel("final rotational level $j'$")
     if ylabel:
@@ -261,11 +272,11 @@ def panel_levels_bar(ax, r, ylabel=True):
 
 def panel_levels_cum(ax, r, legend=False, ylabel=True):
     ax.step(r["levels"], r["cum_sig"] * 100, where="post", color=GREY, lw=1.8, label="collisions")
-    ax.step(r["js"], r["cum_mt"] * 100, where="post", color=ORANGE, lw=2.0, label="momentum transfer")
+    ax.step(r["js"], r["cum_mt"] * 100, where="post", color=RED, lw=2.0, label="momentum transfer")
     if r["missing"] > 0:
         hi_lv = r["levels"][r["levels"] > JMAX_FILES]
         est = np.cumsum(r["sig_lv"][r["levels"] > JMAX_FILES] * r["c_mid"]) / r["mt_tot"]["mid"] + r["cum_mt"][-1]
-        ax.step(np.r_[JMAX_FILES, hi_lv], np.r_[r["cum_mt"][-1], est] * 100, where="post", color=ORANGE, lw=2.0, ls="--",
+        ax.step(np.r_[JMAX_FILES, hi_lv], np.r_[r["cum_mt"][-1], est] * 100, where="post", color=RED, lw=2.0, ls="--",
                 label="momentum transfer (estimated)")
     ax.axhline(90, color="#999999", lw=0.8, ls=":")
     ax.set_xlim(-2, r["levels"].max() + 2); ax.set_ylim(0, 102)
@@ -291,7 +302,7 @@ def panel_energy(ax, res):
     hi = np.array([r["recoil"]["hi"] for r in res]) * 1000
     ax.bar(x - wd / 2, rec, wd, color=BLUE, label="recoil (elastic kinematics; whisker = hard bounds)",
            yerr=[rec - lo, hi - rec], error_kw=dict(ecolor="#222222", lw=1, capsize=3))
-    ax.bar(x + wd / 2, rot, wd, color=ORANGE, label="rotational excitation of CO$_2$")
+    ax.bar(x + wd / 2, rot, wd, color=RED, label="rotational excitation of CO$_2$")
     for xi, v in zip(x - wd / 2, rec):
         ax.text(xi - 0.02, v, f"{v:.1f}", ha="center", va="bottom", fontsize=9, zorder=6,
                 bbox=dict(fc="white", ec="none", pad=0.6, alpha=0.85))
@@ -413,9 +424,178 @@ def write_numbers(out, res):
                     f"{r['recoil']['hi'] * 1000:.3f},{r['dev_dcs_vs_s2s']:.4f}\n")
 
 
+# ----------------------------------------------------------------------------------------------------------
+# H against D, and the momentum-transfer ("transport") cross section at EVERY energy (--compare)
+# ----------------------------------------------------------------------------------------------------------
+def read_state_to_state_all(path):
+    """{energy cm-1 (rounded to 0.001): {final level j': cross section in cm^2}} out of the ground state (ji = 0), all energies."""
+    out = {}
+    for line in open(path):
+        if line.startswith("#"):
+            continue
+        a = line.split()
+        if int(a[2]) != 0:
+            continue
+        out.setdefault(round(float(a[0]), 3), {})[2 * int(a[1])] = float(a[3]) * A2_TO_CM2
+    return out
+
+
+def list_dcs_sources(folder):
+    """{energy eV: (kind, path, member)} for every E<energy>-DCS.txt under the folder, loose or inside a .zip with DCS in its name."""
+    pat = re.compile(r"^E(\d+\.\d+)-DCS\.txt$", re.I)
+    out = {}
+    for p in sorted(Path(folder).rglob("*")):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() == ".txt" and pat.match(p.name):
+            out.setdefault(float(pat.match(p.name).group(1)), ("file", p, None))
+        elif p.suffix.lower() == ".zip" and "DCS" in p.name.upper():
+            with zipfile.ZipFile(p) as z:
+                for n in z.namelist():
+                    m = pat.match(Path(n).name)
+                    if m:
+                        out.setdefault(float(m.group(1)), ("zip", p, n))
+    return out
+
+
+def read_source_text(src):
+    kind, p, member = src
+    if kind == "file":
+        return open(p).read()
+    with zipfile.ZipFile(p) as z:
+        return z.read(member).decode("ascii", "replace")
+
+
+def read_blocks_text(text):
+    lines = text.splitlines()
+    heads = [i for i, l in enumerate(lines) if l.startswith("#")]
+    out = {}
+    for k, a in enumerate(heads):
+        b = heads[k + 1] if k + 1 < len(heads) else len(lines)
+        m = re.search(r"LEV\(F\),J\(F\) =\s*\d+\s+(\d+)", lines[a])
+        arr = np.array(" ".join(lines[a + 1:b]).split(), dtype=float).reshape(-1, 2)
+        out[int(m.group(1))] = (arr[:, 0], arr[:, 1] * A2_TO_CM2)
+    return out
+
+
+def transport_curve(folder):
+    """Momentum-transfer (transport) cross section Q = 2 pi integral dsigma/dOmega (1 - cos theta) sin(theta) dtheta at every
+    collision energy that has an angle file: total over all final levels, and elastic (j' = 0). Levels above j' = 52 are not in
+    the angle files: central value = ESTIMATE as before, lower / upper = hard bounds (mean 1 - cos theta of those levels 0 / 2).
+    Cross sections in cm^2."""
+    srcs = list_dcs_sources(folder)
+    if len(srcs) < 20:
+        print(f"WARNING: only {len(srcs)} angle files found under {folder}; the curves need all of them "
+              f"(the {SYS}-CO2_DCS.zip from the Zenodo archive, or its unzipped files).", file=sys.stderr)
+    s2s_path = find_file(folder, f"{SYS}-CO2_state-to-state", {".res"}, required=False)
+    s2s = read_state_to_state_all(s2s_path) if s2s_path else None
+    keys = np.array(sorted(s2s)) if s2s else None
+    cols = {k: [] for k in ("E", "mid", "lo", "hi", "el", "missing_frac")}
+    for E in sorted(srcs):
+        blocks = read_blocks_text(read_source_text(srcs[E]))
+        js = sorted(blocks)
+        ang = blocks[0][0]
+        sig = {j: integrate(ang, blocks[j][1]) for j in js}
+        mt = {j: integrate(ang, blocks[j][1], lambda t: 1 - np.cos(t)) for j in js}
+        mt52 = sum(mt.values())
+        miss, mfrac, c = 0.0, 0.0, 0.0
+        if s2s is not None:
+            Ecm = E / CM1_TO_EV
+            k = keys[np.argmin(abs(keys - Ecm))]
+            if abs(k - Ecm) < 0.05:
+                lv = s2s[k]
+                miss = sum(v for j, v in lv.items() if j > JMAX_FILES)
+                mfrac = miss / sum(lv.values())
+                if mfrac > 0.001:
+                    m1 = {j: mt[j] / sig[j] for j in js if sig[j] > 1e-4 * sig[0]}
+                    c = float(np.mean([m1[j] for j in sorted(m1)[-5:]]))
+        for k_, v in (("E", E), ("mid", mt52 + miss * c), ("lo", mt52), ("hi", mt52 + 2 * miss), ("el", mt[0]), ("missing_frac", mfrac)):
+            cols[k_].append(v)
+    return {k: np.array(v) for k, v in cols.items()}
+
+
+def make_compare(out, tab, curve, pdf):
+    """tab = {'H': (E_eV, total, elastic), 'D': ...}, curve = {'H': transport_curve(...), 'D': ...}. Red = H, blue = D."""
+    col = {"H": RED, "D": BLUE}
+    # ---- cross sections, H against D (the equivalent of Fig. 2, lower panel, of Bop and Gacesa 2026) ----
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5.6), gridspec_kw=dict(wspace=0.25))
+    ax = axes[0]
+    for sy in ("H", "D"):
+        E, St, Se = tab[sy]
+        m = (E >= 0.1) & (E <= 5.0)
+        ax.plot(E[m], St[m] / A2_TO_CM2, color=col[sy], lw=2.0, label=f"{sy} + CO$_2$: total")
+        ax.plot(E[m], Se[m] / A2_TO_CM2, color=col[sy], lw=2.0, ls="--", label=f"{sy} + CO$_2$: elastic")
+    ax.set_xlim(0.1, 5); ax.set_xlabel("collision energy (eV, centre of mass)"); ax.set_ylabel(r"cross section ($\AA^2$)")
+    ax.set_title("Total and elastic cross sections (initial $j=0$)", fontsize=11, fontweight="bold")
+    ax.legend(frameon=False, fontsize=9, loc="upper right")
+    ax = axes[1]
+    E, Ht, He = tab["H"]; _, Dt, De = tab["D"]
+    ax.semilogx(E, (Dt / Ht - 1) * 100, color=GREY, lw=2.0, label="total")
+    ax.semilogx(E, (De / He - 1) * 100, color=GREY, lw=2.0, ls="--", label="elastic")
+    ax.axhline(0, color="#999999", lw=0.8)
+    for ev in (0.1, 1.0, 5.0):
+        ax.axvline(ev, color="#999999", lw=0.8, ls=":")
+    ax.set_xlabel("collision energy (eV, centre of mass)"); ax.set_ylabel("difference D relative to H (%)")
+    ax.set_title("Isotope effect: (D $-$ H) / H", fontsize=11, fontweight="bold")
+    ax.legend(frameon=False, fontsize=9, loc="lower right")
+    fig.suptitle("H + CO$_2$ (red) and D + CO$_2$ (blue): cross sections from the Bop and Gacesa (2026) tables", fontsize=12.5, y=1.0)
+    save(fig, out / "compare_H_D_cross_sections", pdf)
+    # ---- momentum-transfer (transport) cross section (the equivalent of Fig. 4) ----
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5.6), gridspec_kw=dict(wspace=0.25))
+    for k, ax in enumerate(axes):
+        for sy in ("H", "D"):
+            c = curve[sy]; x = c["E"] / CM1_TO_EV if k == 0 else c["E"]
+            ax.plot(x, c["mid"] / A2_TO_CM2, color=col[sy], lw=2.0, label=f"{sy} + CO$_2$: total")
+            ax.plot(x, c["el"] / A2_TO_CM2, color=col[sy], lw=2.0, ls="--", label=f"{sy} + CO$_2$: elastic")
+            if k == 1 and np.any(c["missing_frac"] > 0.001):
+                m = c["missing_frac"] > 0.001
+                ax.fill_between(x[m], c["lo"][m] / A2_TO_CM2, c["hi"][m] / A2_TO_CM2, color=col[sy], alpha=0.18, lw=0)
+    axes[0].set_xlim(0, 3000); axes[0].set_ylim(0, 50)
+    axes[0].set_xlabel("collision energy (cm$^{-1}$, centre of mass)"); axes[0].set_ylabel(r"momentum-transfer cross section $Q^{(1)}$ ($\AA^2$)")
+    axes[0].set_title("Low energies (the range of Fig. 4 of the paper)", fontsize=11, fontweight="bold")
+    axes[0].legend(frameon=False, fontsize=9, loc="center right")
+    axes[1].set_xscale("log"); axes[1].set_yscale("log"); axes[1].set_xlim(1e-3, 5)
+    axes[1].set_xlabel("collision energy (eV, centre of mass)"); axes[1].set_ylabel(r"$Q^{(1)}$ ($\AA^2$)")
+    axes[1].set_title("Whole energy range", fontsize=11, fontweight="bold")
+    axes[1].text(0.03, 0.04, "shaded: levels above $j'=52$ are not in the angle files;\nline = estimate, band = hard bounds", transform=axes[1].transAxes,
+                 fontsize=8.3, color="#555555")
+    fig.suptitle(r"Momentum-transfer (transport) cross section $Q^{(1)}=2\pi\int \frac{d\sigma}{d\Omega}(1-\cos\theta)\sin\theta\,d\theta$, "
+                 "coupled-states data, initial $j=0$; red = H, blue = D", fontsize=12.5, y=1.0)
+    save(fig, out / "transport_cross_section_H_D", pdf)
+
+
+def run_compare(a):
+    global SYS, M_PROJ
+    out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
+    tab, curve = {}, {}
+    for sy, folder in (("H", a.data_h), ("D", a.data_d)):
+        SYS = sy; M_PROJ = MASSES[sy]
+        tab[sy] = read_table(folder)
+        curve[sy] = transport_curve(folder)
+    make_compare(out, tab, curve, a.pdf)
+    with open(out / "transport_cross_sections.csv", "w") as f:
+        f.write("system,E_eV,E_cm1,Q_total_central_A2,Q_total_lower_bound_A2,Q_total_upper_bound_A2,Q_elastic_A2,fraction_in_levels_above_52\n")
+        for sy in ("H", "D"):
+            c = curve[sy]
+            for i in range(len(c["E"])):
+                f.write(f"{sy},{c['E'][i]:.4g},{c['E'][i] / CM1_TO_EV:.3f},{c['mid'][i] / A2_TO_CM2:.4f},{c['lo'][i] / A2_TO_CM2:.4f},"
+                        f"{c['hi'][i] / A2_TO_CM2:.4f},{c['el'][i] / A2_TO_CM2:.4f},{c['missing_frac'][i]:.5f}\n")
+    print("wrote", out / "compare_H_D_cross_sections.png", out / "transport_cross_section_H_D.png", "and", out / "transport_cross_sections.csv")
+    for sy in ("H", "D"):
+        c = curve[sy]
+        print(f"{sy}: momentum-transfer cross section Q (A^2, total / elastic) at", ", ".join(
+            f"{cm} cm-1: {np.interp(cm * CM1_TO_EV, c['E'], c['mid']) / A2_TO_CM2:.1f} / {np.interp(cm * CM1_TO_EV, c['E'], c['el']) / A2_TO_CM2:.2f}"
+            for cm in (806, 1000, 2000, 3000)))
+    E, Ht, He = tab["H"]; _, Dt, De = tab["D"]
+    print("(D - H)/H of the total cross section:", ", ".join(f"{ev:g} eV: {(np.interp(ev, E, Dt) / np.interp(ev, E, Ht) - 1) * 100:+.1f}%" for ev in (0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0)))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--system", choices=["H", "D"], default="H", help="projectile: H (H-CO2 files) or D (D-CO2 files); point --data at that system's folder")
+    ap.add_argument("--compare", action="store_true", help="H against D figures (needs --data-h, --data-d, and all the angle files / H-CO2_DCS.zip and D-CO2_DCS.zip)")
+    ap.add_argument("--data-h", dest="data_h", default=None, help="folder with the H-CO2 files (for --compare)")
+    ap.add_argument("--data-d", dest="data_d", default=None, help="folder with the D-CO2 files (for --compare)")
     ap.add_argument("--data", default=".", help="folder containing (or above) the raw files")
     ap.add_argument("--out", default="h_co2_figures", help="output folder")
     ap.add_argument("--mode", choices=["all", "combined", "separate"], default="all",
@@ -423,6 +603,11 @@ def main():
     ap.add_argument("--pdf", action="store_true", help="also write PDF versions")
     a = ap.parse_args()
     global SYS, M_PROJ, F_RECOIL
+    if a.compare:
+        if not (a.data_h and a.data_d):
+            sys.exit("--compare needs --data-h and --data-d")
+        run_compare(a)
+        return
     SYS = a.system; M_PROJ = MASSES[SYS]
     F_RECOIL = 4 * M_PROJ * M_CO2 / (M_PROJ + M_CO2) ** 2
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
