@@ -49,7 +49,8 @@ $cs  = Find-One "*total_and_elastic_CS*"
 $d01 = Find-One "*E0.10-DCS*"
 $d1  = Find-One "*E1.00-DCS*"
 $d5  = Find-One "*E5.00-DCS*"
-Write-Host "Found raw files:"; $cs, $d01, $d1, $d5 | ForEach-Object { Write-Host "  $_" }
+$res = Find-One "*state-to-state_CS*"
+Write-Host "Found raw files:"; $cs, $d01, $d1, $d5, $res | ForEach-Object { Write-Host "  $_" }
 
 # ---- clone / update ------------------------------------------------------------------------------------------
 if (-not (Test-Path (Join-Path $CloneDir ".git"))) {
@@ -70,6 +71,7 @@ Copy-Item $cs  (Join-Path $rawDir "H-CO2_total_and_elastic_CS.out") -Force
 Copy-Item $d01 (Join-Path $rawDir "E0.10-DCS.txt") -Force
 Copy-Item $d1  (Join-Path $rawDir "E1.00-DCS.txt") -Force
 Copy-Item $d5  (Join-Path $rawDir "E5.00-DCS.txt") -Force
+Copy-Item $res (Join-Path $rawDir "H-CO2_state-to-state_CS.res") -Force
 Copy-Item $PlotScript (Join-Path $CloneDir "tools\plot_h_co2_figures.py") -Force
 
 # checksums (md5sum format)
@@ -95,6 +97,7 @@ Original location: D:\MASTERS\Archive\H-CO2 (cross sections) and D:\MASTERS\Arch
 | File | Content |
 |---|---|
 | E0.10-DCS.txt, E1.00-DCS.txt, E5.00-DCS.txt | differential cross sections at collision energies 0.1, 1 and 5 eV (centre-of-mass frame). 27 blocks of 1,800 rows, one per FINAL rotational level j' = 0, 2, ..., 52 of CO2 (initial level j = 0). Header line of each block: `# DFFCSO. ACCUM LEV(I),J(I) = 1 0 LEV(F),J(F) = <level> <j'> , M = 0, WEIGHTED BY 1.00000`. Columns: angle (degrees, 0.1 to 180 in steps of 0.1), differential cross section (Angstrom^2 per steradian). Block 1 (j' = 0) is the elastic channel; the others are rotationally inelastic. |
+| H-CO2_state-to-state_CS.res | cross sections into EVERY final level (final j' = 2 x jf), all 149 energies; needed for the levels above j' = 52 that the angle files do not contain (22 MB). Columns: energy (cm^-1), jf, ji, cross section (Angstrom^2). |
 | H-CO2_total_and_elastic_CS.out | 149 energies from 8.07 to 40,328 cm^-1 (0.001 to 5 eV). Columns: energy (cm^-1), j, total cross section (Angstrom^2), elastic cross section (Angstrom^2). |
 
 Figures: `tools/plot_h_co2_figures.py` (plain Python 3 with numpy and matplotlib) makes them from these files; results in `docs/figures/h_co2/`.
