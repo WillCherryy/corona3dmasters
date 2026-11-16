@@ -6,4 +6,5 @@ Checked byte for byte (MD5, see MD5SUMS.txt) against Archive.zip (md5 e1ebc4637a
 - D-CO2_total_and_elastic_CS.out and D-CO2_state-to-state_CS.res = Archive/D-CO2/ (same names)
 - E0.10-DCS.txt, E1.00-DCS.txt, E5.00-DCS.txt = DCS_CO2-D/ inside Archive/D-CO2/D-CO2_DCS.zip
 
-Same formats as the H-CO2 folder. Figures: tools/plot_h_co2_figures.py --system D; results in docs/figures/d_co2/.
+Same formats as the H-CO2 folder. The other 146 energies are in D-CO2_DCS.zip (md5 8880556fa71d50b9db463f54a806643e), not copied here.
+Figures: tools/plot_h_co2_figures.py --system D; results in docs/figures/d_co2/.
