@@ -382,3 +382,22 @@ Figures: dotted line at 0.01 A^2 added to the by-level graphs (label 'convergenc
 
 ## A61 (16 Nov 2026) - footnote wording (user question)
 User asked why the momentum-transfer footnote says levels above j'=52 are 'not in the angle files' while the by-level graphs show levels up to j'=140. Both are right: the bars use the state-to-state file (all levels); the angle distribution files stop at j'=52, and only the momentum-transfer quantities need the angles. Footnotes reworded: 'levels above j'=52 have cross sections (bars below) but no angle distributions, so momentum transfer is an estimate'. Numbers unchanged (CSV md5s identical).
+
+## A62 (16 Nov 2026) - assessment of the Bop and Gacesa data: support and limits (user request to record)
+Overall: decent, internally consistent data with clear limits; usable as the CO2 collision input in place of the O-H stand-in, described as "rotationally inelastic, CO2 in j = 0, coupled states". Whether it is the right input for the Monte Carlo model is the user's and supervisor's decision.
+
+What supports it (all checked, A53-A60):
+- Raw files byte-identical (MD5) to the Zenodo originals (H and D; angle-file zips md5 H d6c0160f..., D 8880556f...).
+- Internal consistency: sum of state-to-state cross sections over all levels = authors' total (ratio 1.00000, H and D, 0.1/1/5 eV); angle integrals reproduce the state-to-state values to 0.01/0.06/0.24 % (H) and 0.03/0.14/0.54 % (D); momentum-transfer integrals identical with trapezoid and Simpson (< 3e-6).
+- Agreement with the paper's own figures (read from the images, so approximate): Fig. 2 total and elastic cross sections; Fig. 4 H momentum-transfer cross section (24.0 vs about 24 A^2 at 806 cm-1; 17.4 vs about 17.4 at 3000 cm-1).
+- Authors' CS vs close-coupling benchmark: about 7 % for momentum-transfer cross sections.
+- Unconverged part (state-to-state cross sections below 0.01 A^2: oscillating tail near the j'=140 basis cap, 5 eV) holds at most 0.21 % of the collisions (H, 5 eV): no effect on any quoted result.
+
+Limits (to state in any write-up):
+1. Rotational excitation only, from CO2 in j = 0: rigid-rotor CO2, no vibrational excitation, no electronic excitation, no reaction. The paper says vibrational excitation is a competing channel at eV energies and the data are "not intended for modelling rovibrational excitation, vibrational heating, or CO2 dissociation". Reaction cross sections are argued small only by citing other systems (O + H2), not H + CO2 itself. At 1-5 eV the real inelastic energy loss is probably larger than these data give.
+2. Cold CO2 only (initial j = 0); real thermospheric CO2 is rotationally populated; other initial levels are not in the data.
+3. Coupled-states approximation benchmarked against close coupling only up to 3000 cm-1 (0.37 eV) (paper Fig. 4); at 1-5 eV the accuracy rests on the general statement of about 10 % agreement of close coupling with laboratory data.
+4. Statements in the paper's text that the data do not support (data and figures themselves fine): 'elastic 40-55 % of total across the full energy range' (data: 46-68 % at 0.1-5 eV); 'forward peak below 2 degrees contributes more than 90 % of the integral cross section' (data: 16-51 %); D/H difference 'up to about 35 % below 0.1 eV, below 9 % above 0.1 eV' (data: -37 % to +40 % below 0.1 eV, +34 % at 0.1 eV, +9.4 % at 1 eV). Quote numbers from the data, not these sentences; consider asking the authors.
+5. Derived quantities that are estimates, not data: momentum transfer, elastic share of momentum transfer, recoil energy and the dashed cumulative curve for levels above j'=52 (H at 5 eV; D at 1 and 5 eV); shown with hard bounds (A57/A58). The recoil energy itself uses elastic kinematics for inelastic events (approximation) and assumes centre-of-mass energies (confirmed by the paper, section 3.1).
+6. The close-coupling data of Dagdigian (2015), the Lewkow-Kharchenko band and the O-CO2 / C-CO2 data of the paper's Figs 2 and 4 are not available here and are not reproduced.
+Related: docs/CALCULATIONS_Bop_Gacesa_data.md (sections 11, 13, 14).
