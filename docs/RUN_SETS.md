@@ -14,5 +14,6 @@ One line per set. "Old code" = executable MD5 `c0c22499...` (partner chosen by d
 | `~/pair_old/runs/*`, `~/pair_new/runs/*` (other folders) | old-versus-fixed tests A and B | old and fixed | LSA | equal constant sigma (`eqsig_*`) or O-H (`base_1`, `base_2`) | 300 and 5,000 | tests; archived separately |
 
 Planned, not yet run: elastic H-CO2 summed over final states ("total") with the fixed code; state-resolved inelastic H-CO2; deuterium (needs the O-D tables and new code).
+Also planned (docs/PLAN_N2_CO_bounding.md): N2 and CO treated with the H-CO2 data as the molecule-like bound (labels `hco2elfix_ncoco2_lsa_N`, `hco2elfix_ncoco2_hsa_N`), against the O-H treatment already running (`hco2elfix_*`) as the atom-like bound.
 
 To list every run folder with its start time, particles, config, commit, executable fingerprint and status, run `~/run_register.sh` (from `tools/run_register.sh`).
