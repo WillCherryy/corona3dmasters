@@ -244,8 +244,8 @@ def panel_share_momentum(ax, res, legend=False):
     flags = [r["missing_frac"] > 0.005 for r in res]
     bounds = [(r["share_el_mt"]["hi"] * 100, r["share_el_mt"]["lo"] * 100) for r in res]       # (smallest, largest) possible share
     _share_bars(ax, el, "share of momentum transfer (%)", "How much deflection (momentum transfer)", legend, flags, bounds)
-    lines = [f"* {r['E']:g} eV: levels above $j'=52$ ({r['missing_frac']:.1%} of collisions) are not in the angle files; value = estimate,\n"
-             f"   whisker = hard bounds {r['share_el_mt']['hi']:.1%} to {r['share_el_mt']['lo']:.1%} (missing levels transfer 0 to the maximum)"
+    lines = [f"* {r['E']:g} eV: levels above $j'=52$ ({r['missing_frac']:.1%} of collisions) have cross sections (bars below) but no angle distributions,\n"
+             f"   so momentum transfer is an estimate; whisker = hard bounds {r['share_el_mt']['hi']:.1%} to {r['share_el_mt']['lo']:.1%}"
              for r in res if r["missing_frac"] > 0.005]
     if lines:
         ax.text(0.5, -0.2, "\n".join(lines), transform=ax.transAxes, ha="center", va="top", fontsize=7.6, color="#555555")
@@ -324,7 +324,7 @@ def panel_table(ax, res):
         star = "*" if r["missing_frac"] > 0.005 else " "
         lines.append(f"{r['E']:>6g}eV  {r['share_el_coll']:>11.1%} {r['share_el_mt']['mid']:>11.1%}{star}  "
                      f"{j90:>16}  {r['mean_rot'] * 1000:>8.1f} / {r['recoil']['mid'] * 1000:<8.1f}")
-    lines += ["", "* the angle files stop at j' = 52; at 5 eV the levels above hold "
+    lines += ["", "* angle distributions exist only up to j' = 52 (cross sections are known for all levels); the levels above hold "
               + ", ".join(f"{r['missing_frac']:.1%} at {r['E']:g} eV" for r in res if r["missing_frac"] > 0.005) + " of the collisions.",
               "  Their momentum transfer is ESTIMATED (mean 1-cos theta of the top 5 levels present); whiskers/ranges are",
               "  hard bounds: the missing levels transfer 0 to the maximum possible (mean 1-cos theta = 2).",
