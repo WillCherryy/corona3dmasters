@@ -46,7 +46,7 @@ Cumulative sums over j' of sigma_j' (collisions; state-to-state, all levels) and
 E_rot(j') = B j'(j'+1), B = 0.39022 cm-1 (CO2 ground-state rotational constant, approximate; centrifugal distortion neglected, about 0.7 % at j' = 140). Initial level j = 0 so the energy gained equals E_rot(j'). Mean per collision = sum sigma_j' E_rot(j') / sum sigma_j' over EVERY level from the state-to-state file (H 1.06 / 7.90 / 17.86 meV; D 1.49 / 13.59 / 30.37 meV at 0.1 / 1 / 5 eV).
 
 ## 9. Recoil energy per collision (ESTIMATED approximation)
-For elastic scattering of a mass m1 on a stationary mass m2 = 44.0095 amu, the projectile loses (f/2)(1 - cos theta_cm) E_lab with f = 4 m1 m2 / (m1 + m2)^2 (H, m1 = 1.00794: f = 0.08755; D, m1 = 2.01410178: f = 0.16739) and E_lab = E (m1 + m2) / m2 (assuming the tabulated energy E is the centre-of-mass energy; if it is a lab energy the values change by 2.3 % for H and 4.6 % for D). The mean over collisions = (f/2) E_lab x MT_total / (sum of sigma_j'). This applies elastic kinematics to inelastic events, so it is an approximation. The figure bar uses c_mid; the whisker uses c = 0 (floor) and c = 2 (maximum).
+For elastic scattering of a mass m1 on a stationary mass m2 = 44.0095 amu, the projectile loses (f/2)(1 - cos theta_cm) E_lab with f = 4 m1 m2 / (m1 + m2)^2 (H, m1 = 1.00794: f = 0.08755; D, m1 = 2.01410178: f = 0.16739) and E_lab = E (m1 + m2) / m2 (E is the centre-of-mass energy: stated in the paper, section 3.1). The mean over collisions = (f/2) E_lab x MT_total / (sum of sigma_j'). This applies elastic kinematics to inelastic events, so it is an approximation. The figure bar uses c_mid; the whisker uses c = 0 (floor) and c = 2 (maximum).
 
 ## 10. Results (own calculation; E in eV)
 | quantity | H 0.1 | H 1 | H 5 | D 0.1 | D 1 | D 5 |
@@ -62,9 +62,22 @@ For elastic scattering of a mass m1 on a stationary mass m2 = 44.0095 amu, the p
 | recoil, central (floor to max) (meV) | 1.2 | 10.3 | 22.8 (19.6-32.2) | 1.8 | 17.8 (16.0-18.6) | 38.1 (28.8-85.6) |
 Values in the CSVs: `docs/figures/h_co2/h_co2_numbers.csv`, `docs/figures/d_co2/d_co2_numbers.csv`.
 
-## 11. Not done
+## 11. Not done, and what the paper settled
 - No interpolation between energies, no thermal average over initial j (the data are initial j = 0 only), no use of these data in the Monte Carlo model yet.
-- Not checked: whether the calculation includes vibrational excitation or reaction (H + CO2 -> OH + CO) at 5 eV; whether the energies are centre-of-mass (assumed); cause of the alternation of sigma_j' near the j' = 140 basis cap at 2.5-5 eV (A55).
+- Settled by the paper (read 16 Nov 2026):
+  - Energies are centre-of-mass (section 3.1). The recoil formula uses this correctly.
+  - The calculation is jz-conserving coupled states (CS) with a rigid-rotor CO2: rotational excitation only. No vibrational excitation, no electronic excitation, no reaction; the authors say the data are "not intended for modelling rovibrational excitation, vibrational heating, or CO2 dissociation" and note that experiments show vibrational excitation is a competing channel at eV energies (section 2.2). "Inelastic" in these data therefore means rotationally inelastic only.
+  - The rotational basis is 71 even-j levels, j = 0, 2, ..., 140: the cap at j' = 140 is the basis size. Transitions above 140 are said to contribute negligibly. Convergence is guaranteed only for state-to-state cross sections above 0.01 Angstrom^2 (1e-18 cm^2); weaker ones are said to contribute less than 0.23 % of the total, and converging them would need about j = 350. This explains the alternation of sigma_j' at 5 eV: it starts where sigma_j' falls below 0.01 Angstrom^2 (j' about 110 for H), i.e. in the region the authors do not claim is converged (A55 explained, A59). The dotted line at 0.01 Angstrom^2 is now drawn on the by-level graphs.
+  - Accuracy: CS agrees with close coupling to about 7 % for the momentum-transfer cross sections, but the CS/CC comparison in the paper (Fig. 4) covers only energies up to 3000 cm-1 (0.37 eV); at 1-5 eV the quoted accuracy rests on the general statement that CC agrees with laboratory data to about 10 %.
+- Still open: no D-O (Zhang et al. 2009) tables yet; cause of residual differences between CS and CC at 1-5 eV not tested.
 
+## 13. Cross-checks against the paper (16 Nov 2026)
+| Paper | This analysis of the data files | Result |
+|---|---|---|
+| Fig. 2: total H-CO2 about 87 / 55 / 47.5 A^2, D-CO2 about 116 / 60 / 50 A^2 at 0.1 / 1 / 5 eV; elastic H about 53 / 26 / 22.5, D about 79 / 29 / 23 | table values 86.5 / 55.0 / 47.6 (H), 116.2 / 60.2 / 49.9 (D); elastic 52.8 / 26.1 / 22.5 (H), 79.4 / 29.3 / 22.9 (D) | agree (read from the figure) |
+| Fig. 4: momentum-transfer cross section at 800 cm-1 (0.1 eV), H, j = 0: total about 24 A^2, elastic about 1.2-1.5 A^2 | sigma_mt total 24.0 A^2, elastic 1.16 A^2 (4.8 %) | agree: independent check of the (1 - cos theta) integrals and of the elastic share of momentum transfer at 0.1 eV |
+| "less than 0.23 % of total from transitions below 0.01 A^2" | collisions in levels with sigma < 0.01 A^2: H 0.004 / 0.018 / 0.209 %, D 0.001 / 0.020 / 0.000 % | consistent |
+| "elastic scattering accounts for 40-55 % of the total cross section across the full energy range" | elastic share 61.0 / 47.5 / 47.2 % (H), 68.3 / 48.6 / 45.9 % (D) at 0.1 / 1 / 5 eV; about 77 % at 0.001 eV | their sentence is looser than their own Fig. 2, which our numbers match; quote the numbers, not the sentence |
+| "forward peak (theta < about 2 degrees) contributes more than 90 % of the integral cross section" | share of the total (j' <= 52) cross section below 2 degrees: H 16 / 35 / 46 %, D 32 / 44 / 51 %; 90 % is reached by 98 / 84 / 43 degrees (H) and 83 / 74 / 33 degrees (D); for the elastic channel alone 90 % lies within 9.4 / 4.5 / 2.2 degrees (H) and 6.6 / 3.0 / 1.5 degrees (D); more than 94 % of the momentum transfer comes from theta > 20 degrees | NOT reproduced for the total cross section; the DCS is strongly forward-peaked in magnitude, but the integral is not dominated by theta < 2 degrees. Do not repeat the sentence; consider asking the authors what it means |
 ## 12. History of corrections
 First figures (14-15 Nov) had errors that were found by checking against the state-to-state file and replaced (A53): by-level elastic share used the truncated total (49 % at 5 eV, correct 47.2 %); 5 eV rotational energy 9.6 meV (correct 17.9); "90 % by j' = 46" invalid; elastic momentum share 3.1 % (about 2.7 %). A57: the 0.5-1.5 x range on the estimates was not a rigorous bound; replaced by the hard bounds above (this version).
