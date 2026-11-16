@@ -1,0 +1,5 @@
+099a93194efd8634fec4d4559ef25524  D-CO2_state-to-state_CS.res
+214d3d7126d6b4ebe43320f5055fdb19  D-CO2_total_and_elastic_CS.out
+269a2409da3c62f704c8886d228ba7db  E0.10-DCS.txt
+51a07c2fa9dc6629845b905f3f2c30ce  E1.00-DCS.txt
+75affc2f8aed20cb18955f282cc35290  E5.00-DCS.txt
