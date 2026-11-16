@@ -2,7 +2,7 @@
 
 Source: C. T. Bop and M. Gacesa (2026), MNRAS 552, 1-8, doi:10.1093/mnras/stag1696. Data release: Zenodo, doi:10.5281/zenodo.17549249
 (Bop and Gacesa 2025a, "Superthermal kinetic energy transfer via CO2 collisions with H and D: elastic and inelastic cross-sections").
-The licence of the data record must be checked on the Zenodo page before the files are redistributed or published; cite the paper and the dataset when using them.
+Licence of the Zenodo record: CC BY 4.0 (checked on the record, 16 Nov 2026), so redistribution is allowed with attribution: cite the paper and the dataset. The record holds one file, `Archive.zip` (135,546,983 bytes, md5 `e1ebc4637a175a5bd142a6512697e551`); the files here are copies of files inside it.
 
 These files are UNMODIFIED copies of the files received (checksums in `MD5SUMS.txt`). Original location of the user's copies:
 `D:\MASTERS\Archive\H-CO2` (cross sections) and `D:\MASTERS\Archive\H-CO2\H-CO2_DCS` (angle distributions).

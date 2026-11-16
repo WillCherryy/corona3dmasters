@@ -87,7 +87,7 @@ $readme = @'
 # Raw H + CO2 collision data (Bop and Gacesa 2026), as received
 
 Source: C. T. Bop and M. Gacesa (2026), MNRAS 552, 1-8, doi:10.1093/mnras/stag1696. Data release: Zenodo, doi:10.5281/zenodo.17549249.
-CHECK THE LICENCE of the Zenodo record before relying on redistribution; cite the paper and the dataset when using the files.
+Licence of the Zenodo record: CC BY 4.0 (redistribution allowed with attribution); cite the paper and the dataset. The record holds one file, Archive.zip (md5 e1ebc4637a175a5bd142a6512697e551).
 
 The files are unmodified copies of the files received (checksums in MD5SUMS.txt).
 Original location: D:\MASTERS\Archive\H-CO2 (cross sections) and D:\MASTERS\Archive\H-CO2\H-CO2_DCS (angle distributions).
