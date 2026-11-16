@@ -1,4 +1,0 @@
-E_eV,sigma_elastic_cm2,sigma_total_cm2,sigma_inelastic_cm2,elastic_share_of_collisions,elastic_share_of_momentum_transfer,mean_1-cos_elastic,mean_1-cos_inelastic,mean_1-cos_total
-0.1,5.2772e-15,8.6468e-15,3.3696e-15,0.6103,0.0483,0.0220,0.6781,0.2777
-1.0,2.6128e-15,5.5049e-15,2.8921e-15,0.4746,0.0225,0.0109,0.4292,0.2307
-5.0,2.2454e-15,4.7579e-15,2.5125e-15,0.4719,0.0311,0.0058,0.1693,0.0900

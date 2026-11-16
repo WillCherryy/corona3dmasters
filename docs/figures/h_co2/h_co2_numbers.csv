@@ -1,0 +1,4 @@
+E_eV,sigma_elastic_table_cm2,sigma_total_table_cm2,sum_over_all_levels_cm2,fraction_in_levels_above_52,elastic_share_of_collisions,elastic_share_of_momentum_central,elastic_share_of_momentum_low_assumption,elastic_share_of_momentum_high_assumption,j_for_90pct_momentum,mean_rotational_energy_meV,mean_recoil_energy_meV_central,mean_recoil_energy_meV_low,mean_recoil_energy_meV_high,max_deviation_angle_integral_vs_state_to_state
+0.1,5.2772e-15,8.6468e-15,8.6468e-15,0.0000,0.6103,0.0483,0.0483,0.0483,12,1.062,1.243,1.243,1.243,0.0001
+1.0,2.6128e-15,5.5049e-15,5.5049e-15,0.0000,0.4746,0.0225,0.0225,0.0225,40,7.902,10.329,10.329,10.329,0.0006
+5.0,2.2454e-15,4.7579e-15,4.7579e-15,0.0282,0.4719,0.0267,0.0250,0.0288,>52,17.856,22.763,21.156,24.369,0.0024

@@ -1,4 +1,0 @@
-E_eV,sigma_elastic_table_cm2,sigma_total_table_cm2,sigma_sum_levels_cm2,sum_over_total_table,elastic_share_collisions,elastic_share_momentum,mean_1-cos_total,mean_rotational_energy_eV,mean_recoil_energy_eV
-0.1,5.2772e-15,8.6468e-15,8.6461e-15,0.9999,0.6103,0.0483,0.2777,0.00106,0.00124
-1.0,2.6128e-15,5.5049e-15,5.5031e-15,0.9997,0.4745,0.0225,0.2307,0.00790,0.01033
-5.0,2.2454e-15,4.7579e-15,4.6179e-15,0.9706,0.4851,0.0311,0.0900,0.00958,0.02014
