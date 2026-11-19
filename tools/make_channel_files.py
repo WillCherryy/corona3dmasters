@@ -4,11 +4,11 @@ Make the input files for the channel-resolved (rotationally inelastic) CO2 colli
 Needs numpy only.
 
 Writes, into the output folder (default inputs/collisions/<S>-CO2/channels):
-  channel_cross_sections_<S>_CO2.csv
+  state_to_state_cross_section_<S>_CO2.csv
       '#' comment lines, then   dE_eV,<energy loss of channel 1>,...,<channel N>   then one row per collision energy:
       E_eV,<cross section channel 1>,...,<channel N>    (cm^2; initial CO2 level j = 0; channel c = final level j' = 2(c-1))
       N = 71 channels (j' = 0, 2, ..., 140); channel 1 is the elastic one (energy loss 0).
-  diff_cross_sections_<S>_CO2_channels_<E>eV.csv     (one per requested energy)
+  diff_cross_section_<S>_CO2_state_to_state_<E>eV.csv     (one per requested energy)
       '#' comment lines, then angle (degrees),<dsigma/dOmega channel 1>,...,<channel N>   (cm^2 per steradian, 1800 angles)
 
 Energy loss of channel j' = rotational energy of CO2, B j'(j'+1), rigid rotor, B = 0.39022 cm-1 (the highest open level at the lowest
@@ -117,15 +117,13 @@ def main():
     dev = np.max(np.abs(table.sum(axis=1) / tot_auth - 1))
     print(f"{len(e_ev)} energies; sum over channels against the authors' total cross section: max deviation {dev:.2e}")
 
-    with open(out / f"channel_cross_sections_{S}_CO2.csv", "w") as f:
-        f.write(f"# {S} + CO2 channel cross sections, initial CO2 level j = 0, collision energy in the centre-of-mass frame\n")
-        f.write("# Source: Bop and Gacesa (2026) state-to-state file, doi 10.5281/zenodo.17549249. Channel c = final level j' = 2(c-1); cross sections in cm^2.\n")
-        f.write(f"# Energy loss of channel j': rigid rotor B j'(j'+1), B = {B_ROT} cm-1. Row below: dE_eV, then the energy loss (eV) of each channel.\n")
+    with open(out / f"state_to_state_cross_section_{S}_CO2.csv", "w") as f:
+        f.write(f"#{S}-CO2 state-to-state collision cross sections from Bop and Gacesa 2026 (CO2 initially in level j = 0)\n")
+        f.write(f"#Energy(eV),sigma(cm^2) for each final level j' = 0, 2, ..., 140 (columns 2 to 72, channel c = j' = 2(c-1)); row 'dE_eV': rotational energy gained by CO2 (eV), B j'(j'+1), B = {B_ROT} cm-1\n")
         f.write("dE_eV," + ",".join(f"{x:.8e}" for x in d_e) + "\n")
-        f.write("# then one row per energy: E_eV, cross section of each channel\n")
         for i in range(len(e_ev)):
             f.write(f"{e_ev[i]:.8e}," + ",".join(f"{x:.8e}" for x in table[i]) + "\n")
-    print("wrote", out / f"channel_cross_sections_{S}_CO2.csv")
+    print("wrote", out / f"state_to_state_cross_section_{S}_CO2.csv")
 
     # ---- angle distributions per channel at the requested energies ----
     for e in a.energies:
@@ -153,12 +151,10 @@ def main():
             target = s_e[c] if s_e[c] > 0 else 1e-30
             cols[c] = shape * target / integral(ang, shape)
         assumed = [2 * c for c in range(N_CHANNELS) if 2 * c > J_MAX_ANGLES and s_e[c] > 0]
-        name = out / f"diff_cross_sections_{S}_CO2_channels_{e:g}eV.csv"
+        name = out / f"diff_cross_section_{S}_CO2_state_to_state_{e:g}eV.csv"
         with open(name, "w") as f:
-            f.write(f"# {S} + CO2 differential cross sections per channel (cm^2 per steradian), centre-of-mass angle, collision energy {e:g} eV\n")
-            f.write("# Source: Bop and Gacesa (2026), doi 10.5281/zenodo.17549249. Column 1 angle (degrees), column c+1 = channel c (final level j' = 2(c-1)).\n")
-            f.write(f"# Channels with j' > {J_MAX_ANGLES} have no angle data in the source: shape assumption '{a.high_j_shape}' scaled to the channel cross section.\n")
-            f.write("# Channels without a signal at this energy (closed) carry the shape of the highest channel with a signal, scaled to a negligible cross section (1e-30 cm^2).\n")
+            f.write(f"#{e:g}eV differential cross sections (cm^2 per steradian) for {S}-CO2 state-to-state collisions from Bop and Gacesa 2026 (CO2 j = 0 -> j' = 0, 2, ..., 140)\n")
+            f.write(f"#angle(deg),sigma(cm^2) for each final level j' (columns 2 to 72; no angle data in the source above j' = {J_MAX_ANGLES}: shape assumption '{a.high_j_shape}'; channels with no signal at this energy: placeholder shape, cross section 1e-30)\n")
             for i in range(len(ang)):
                 f.write(f"{ang[i]:.2f}," + ",".join(f"{cols[c][i]:.6e}" for c in range(N_CHANNELS)) + "\n")
         n_open = int(np.sum(s_e > 0))

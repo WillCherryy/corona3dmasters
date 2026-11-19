@@ -36,10 +36,10 @@ energy1           0.1
 energy2           1.0
 energy3           5.0
 
-energy1_file      ./inputs/collisions/H-CO2/channels/diff_cross_sections_H_CO2_channels_0.1eV.csv
-energy2_file      ./inputs/collisions/H-CO2/channels/diff_cross_sections_H_CO2_channels_1eV.csv
-energy3_file      ./inputs/collisions/H-CO2/channels/diff_cross_sections_H_CO2_channels_5eV.csv
+energy1_file      ./inputs/collisions/H-CO2/diff_cross_section_H_CO2_state_to_state_0.1eV.csv
+energy2_file      ./inputs/collisions/H-CO2/diff_cross_section_H_CO2_state_to_state_1eV.csv
+energy3_file      ./inputs/collisions/H-CO2/diff_cross_section_H_CO2_state_to_state_5eV.csv
 
 
 num_channels     71
-channel_file     ./inputs/collisions/H-CO2/channels/channel_cross_sections_H_CO2.csv
+channel_file     ./inputs/collisions/H-CO2/state_to_state_cross_section_H_CO2.csv
