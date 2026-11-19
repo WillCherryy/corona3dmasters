@@ -177,7 +177,7 @@
  		for (int j=0; j<num_energies; j++)
  		{
  			diff_sigma_CDFs[i][j].resize(2);
-@@ -144,6 +168,28 @@
+@@ -144,6 +168,48 @@
  			diff_sigma_energies[i].push_back(stod(values[energies_index + j]));
  			common::import_csv(values[energies_index + num_energies + j], diff_sigma_PDF[0], diff_sigma_PDF[1]);
  			make_new_CDF(i, j, diff_sigma_PDF[0], diff_sigma_PDF[1]);
@@ -203,10 +203,30 @@
 +			read_channel_file(channel_file_cfg, num_channels_cfg, i);
 +			num_channels[i] = num_channels_cfg;
 +			channel_counts[i].assign(num_channels_cfg, 0);
++
++			if (bg_sigma_defaults[i] == 0.0)   // a total cross-section table is in use: it must equal the sum of the channel cross sections
++			{
++				double worst = 0.0;
++				for (size_t k=0; k<channel_E[i].size(); k++)
++				{
++					double sum = 0.0;
++					for (int c=0; c<num_channels_cfg; c++)
++					{
++						sum += channel_sigma[i][c][k];
++					}
++					double tot = sigma_interp[i]->linterp(channel_E[i][k]);
++					worst = max(worst, fabs(sum/tot - 1.0));
++				}
++				if (worst > 1.0e-3)
++				{
++					cout << "total_sigma_file and the channel table differ by up to " << worst << " (relative): total_sigma_file must be the TOTAL table (all channels)!\n";
++					exit(1);
++				}
++			}
  		}
  	}
  
-@@ -372,12 +418,25 @@
+@@ -372,12 +438,25 @@
  			}
  			energy[collision_target] = calc_collision_e(p, bg_parts[collision_target]);
  		}
@@ -233,7 +253,7 @@
  		return false;
  	}
  }
-@@ -457,6 +516,260 @@
+@@ -457,6 +536,260 @@
  	return collision_theta;
  }
  
