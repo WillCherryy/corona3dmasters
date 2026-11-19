@@ -1,0 +1,25 @@
+channels read: 71, table energies: 149
+
+=== TEST 1: channel sampling (4e6 draws per energy): E_eV, freq of channels j'=0,2,4,6,8,10 (%), P(j'>52) (%), mean energy loss (meV)
+E=0.10: 61.028 10.106 7.905 6.335 5.471 4.719  | 0.000 | 1.064
+E=0.35: 50.797 10.550 7.098 5.555 4.593 3.923  | 0.000 | 3.383
+E=1.00: 47.494 10.646 6.496 4.845 3.812 3.161  | 0.003 | 7.896
+E=3.00: 46.956 10.948 6.225 4.418 3.346 2.702  | 2.869 | 15.688
+E=5.00: 47.214 11.215 6.346 4.408 3.328 2.622  | 2.822 | 17.852
+
+=== TEST 2: angle sampling (2e6 draws): channel j', E_eV, mean(1-cos theta)
+j'=0 E=1.0: 0.0110
+j'=2 E=1.0: 0.0659
+j'=10 E=1.0: 0.2655
+j'=24 E=1.0: 0.7702
+j'=52 E=1.0: 1.7933
+j'=80 E=1.0: 1.7933
+j'=0 E=5.0: 0.0058
+j'=2 E=5.0: 0.0322
+j'=10 E=5.0: 0.0841
+j'=24 E=5.0: 0.3241
+j'=52 E=5.0: 0.5911
+j'=80 E=5.0: 0.5906
+
+=== TEST 3: energy accounting of Particle::do_collision (H on CO2, thermal CO2)
+worst relative error of E_cm after = E_cm before - dE: 1.41e-15; worst |cos(angle to incident direction) - cos(theta)|: 4.44e-16; worst momentum error: 1.10e-15

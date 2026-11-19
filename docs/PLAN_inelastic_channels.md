@@ -1,0 +1,40 @@
+# Plan and design: rotationally inelastic H + CO2 collisions as collision channels (16-19 Nov 2026)
+
+Status: designed and TESTED in a scratch copy (cpp checkout plus the user's partner-selection fix); NOT applied to the user's `test` branch: the user makes the edits by hand. Reference patch: `docs/patches/inelastic_channels.patch` (355 lines added, 4 changed).
+
+## 1. The collision, step by step
+1. Collision happens with probability 1 - exp(-tau), tau = v dt sum_s sigma_s n_s, with sigma_CO2 = the TOTAL cross section (elastic + all inelastic) at the collision energy.
+2. Partner species chosen with probability sigma_s n_s / sum (user's earlier fix). Nothing else changes here as long as CO2's `total_sigma_file` is the total table.
+3. NEW: for a species with channels, channel c (final CO2 level j' = 2(c-1)) is chosen with probability P_c(E) = sigma_c(E) / sum over OPEN channels of sigma_c'(E); sigma_c(E) = cross section CO2(j=0) -> CO2(j') from the authors' state-to-state file, interpolated linearly in energy (end values outside the table); channels whose energy loss is not below the collision energy are excluded.
+4. NEW: the scattering angle comes from the angle distribution of that channel (cumulative table at the tabulated energy nearest to the collision energy, as before).
+5. NEW: energy loss dE_c = B j'(j'+1) (B = 0.39022 cm-1, rigid rotor) is removed from the relative (centre-of-mass) motion: the c-o-m speed is multiplied by sqrt(1 - dE/E_cm); elastic channel: dE = 0.
+
+## 2. Data
+- `tools/make_channel_files.py` makes `channel_sigma_<S>_CO2.csv` (71 channels, all 149 energies) and `diff_cross_section_<S>_CO2_channels_<E>eV.csv` from the raw files. Sum over channels equals the authors' total cross section (max deviation 3e-9). Channel probabilities do NOT need extra tables for the total: the total table stays as it is.
+- Channel probabilities and energy loss: levels j' > 52 have cross sections and energy losses (from the state-to-state file) but no angle data (angle files stop at j' = 52). For those the angle shape is an ASSUMPTION: `--high-j-shape last` (shape of j' = 52, mean 1 - cos theta about 0.6 at 5 eV for H) or `isotropic` (1.0). They hold 2.82 % of the H + CO2 collisions at 5 eV (0 below 1 eV; D: 1.47 % at 1 eV, 6.49 % at 5 eV) but 48 % of the mean rotational energy loss at 5 eV (H; D: 17 % at 1 eV, 68 % at 5 eV), so they must be included for the energy loss.
+- Energy-loss constant check: from the lowest energies of the authors' file, B must lie between 0.3841 and 0.4033 cm-1 (0.39022 is inside).
+- Channels closed at a tabulated angle-file energy carry a placeholder shape (negligible cross section 1e-30 cm^2); the nearest-energy rule means a channel that opens between tabulated energies uses that placeholder: add angle-file energies (`--energies`) to reduce it.
+
+## 3. Code changes (five files)
+`Particle.hpp/.cpp`: `do_collision` gets a last argument `dE_eV = 0.0` (default keeps every old call unchanged) and applies the speed factor. `Atmosphere.cpp`: passes `bg_species.get_collision_dE()` and prints the channel statistics at the end. `Background_Species.hpp/.cpp`: new members and functions (`pick_channel`, `find_new_theta_channel`, `make_channel_CDF`, `read_channel_file`, `read_columns`, `get_collision_dE`, `print_channel_stats`), config keys `num_channels` and `channel_file` (species configs without them behave exactly as before), hook in `check_collision` replacing the single `find_new_theta` call.
+IMPORTANT: the makefile does not track header dependencies; after changing a header delete all `.o` files and rebuild (`rm -f *.o corona3d_2020; make`), otherwise the class layout of `Atmosphere`/`Background_Species` differs between object files and the program can corrupt memory.
+
+## 4. Tests done (scratch build, g++ 13, Eigen 3.4)
+1. Regression, same seed 123, 2,000 particles, `corona3d_2020_HCO2total.cfg`: executable with the new code and no channels, and with ONE channel (dE = 0, sigma = total, angle file = the existing summed one): all 109 output files and the final tallies identical to the unmodified code (693,627 collisions, 380 day and 62 night escapes, total loss rate 1.3649e25); the console output differs only by the two new statistics lines.
+2. Unit test (`tools/test_channels.cpp`, output in `docs/patches/inelastic_channels_unit_test_output.txt`): 4e6 channel draws per energy reproduce the table (elastic 61.03 / 47.49 / 47.21 % at 0.1 / 1 / 5 eV against 61.03 / 47.46 / 47.19 %; mean energy loss 1.064 / 7.896 / 17.852 meV against 1.062 / 7.902 / 17.856 meV; P(j' > 52) 2.82 % at 5 eV); sampled mean (1 - cos theta) of channel j' = 52 at 5 eV 0.591 (file 0.591); `do_collision` with dE: E_cm after = E_cm before - dE to 1.4e-15 relative, angle to the incident direction = theta to 4e-16, momentum conserved to 1e-15 (2,000 random collisions).
+3. Full channel run (71 channels, 3 angle-file energies, seed 123, 2,000 particles): 338,348 CO2 collisions, 48.9 % elastic, mean energy loss 10.7 meV per CO2 collision, total loss rate 1.102e25 against 1.365e25 for the total variant with elastic kinematics (SINGLE run each: statistical noise about 5 %, indication only).
+4. `run_sim2.sh` accepted the channel configs and recorded commit, executable fingerprint, copies of all configs and data; `tools/run_report.sh` printed them (below).
+
+## 5. Run protocol: inputs, outputs, commit level
+- Commit first on `test`: the new data files (generated with `tools/make_channel_files.py`; record its command line and the md5 of each file in the logbook), the species config and the main configs; `run_sim2.sh` refuses untracked configs/inputs and a dirty tree.
+- Launch with `run_sim2.sh` (unchanged): each run folder then holds `run_info.txt` (commit, full commit, branch, executable md5, host, particles, seed, config names), read-only copies of every config and input, `settings_md5.txt`, `code_changes.patch` and `git_status.txt` (both must be empty), `console.out` (final tallies and, new, `Channel statistics` and `Collisions per channel`), and a row in `runs/summary.csv`.
+- After a run: `~/run_report.sh label [label ...]` prints, per run, all of the above plus the md5 of every data file named by the species configs. Paste its output into the logbook. Expected for a clean run: 0 bytes of code changes, executable md5 equal across the set, config fingerprints equal across the set.
+- Labels: `hco2ch_lsa_N`, `hco2ch_hsa_N` (N = 1-10) for the channel treatment with N2 and CO on O-H; further sets get their own prefix and a row in `docs/RUN_SETS.md`.
+
+## 6. Open points
+1. Angle shape for j' > 52 (two options; run both as a sensitivity test, and a third with those channels left out and the probabilities renormalised).
+2. Energies above 5 eV: cross sections and angle files are held at their 5 eV values (clamping in `Interpolator::linterp` and nearest-energy rule); the channel table is clamped the same way.
+3. Channel probabilities are interpolated in energy but angle shapes use the nearest of the tabulated energies (3 by default); more energies are cheap (all 149 are in the Zenodo archive).
+4. CO2 initial level j = 0 only (A63); vibrational excitation and reaction absent from the data; CO2 is not tracked after a collision.
+5. N2 and CO keep their legacy single-channel treatment (O-H data) or get channels from the same files as a bounding case (the CO2 rotational ladder would then be applied with the N2/CO mass: a stated assumption). Lewkow and Kharchenko (2014) scaling (universal piecewise log-log fit of the differential cross section in reduced variables; the Bop and Gacesa paper finds 10-15 % deviations for H-CO2 total cross sections above 1 eV and about 45 % below) could supply total/elastic tables for H-N2 and H-CO, not state-resolved channels.
+6. Deuterium: the data script takes `--system D`; D-CO2 files have the same structure; keep the D = H regression test.

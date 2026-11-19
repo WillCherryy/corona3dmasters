@@ -1,0 +1,496 @@
+--- a/src/Particle.hpp
++++ b/src/Particle.hpp
+@@ -22,7 +22,7 @@
+ 	virtual string get_name() const = 0;  //must be implemented in derived classes
+ 
+ 	void deactivate(string fate);
+-	void do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r);
++	void do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r, double dE_eV = 0.0);   // dE_eV: energy (eV) removed from the relative motion (0 = elastic)
+ 	void do_timestep(double dt, double k_g);
+ 	void dump_collision_log(string filename);
+ 	bool is_active() const;
+--- a/src/Particle.cpp
++++ b/src/Particle.cpp
+@@ -42,7 +42,7 @@
+ }
+ 
+ // perform collision on a particle and update velocity vector
+-void Particle::do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r)
++void Particle::do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r, double dE_eV)
+ {
+ 	double v_before, v_after;
+ 	double my_mass = get_mass();
+@@ -55,6 +55,19 @@
+ 	Matrix<double, 3, 1> v1v = velocity.array() - vcm.array();        // particle 1 c-o-m velocity
+ 	// Matrix<double, 3, 1> v2v = targ_v.array() - vcm.array();          // particle 2 c-o-m velocity
+ 	double v1 = sqrt(v1v[0]*v1v[0] + v1v[1]*v1v[1] + v1v[2]*v1v[2]);  // particle 1 c-o-m scalar velocity
++
++	// inelastic collision: the kinetic energy of the relative motion (the c-o-m energy) drops by dE_eV, so the c-o-m speed drops by sqrt(1 - dE/E_cm)
++	if (dE_eV > 0.0)
++	{
++		double e_cm = 0.5*my_mass*v1*v1*(1.0 + my_mass/targ_mass);   // c-o-m kinetic energy of both particles (erg)
++		double dE = dE_eV*constants::ergev;
++		if (dE >= e_cm)
++		{
++			cout << "Energy loss of the collision channel exceeds the collision energy: check the channel table\n";
++			exit(1);
++		}
++		v1 = v1*sqrt(1.0 - dE/e_cm);
++	}
+ 	// double v2 = sqrt(v2v[0]*v2v[0] + v2v[1]*v2v[1] + v2v[2]*v2v[2]);  // particle 2 c-o-m scalar velocity
+ 
+ 	// unit vector parallel to particle 1 velocity
+--- a/src/Atmosphere.cpp
++++ b/src/Atmosphere.cpp
+@@ -338,7 +338,7 @@
+ 
+ 			if (bg_species.check_collision(my_parts[active_indices[j]], dt))
+ 			{
+-				my_parts[active_indices[j]]->do_collision(bg_species.get_collision_target(), bg_species.get_collision_theta(), i*dt, my_planet.get_radius());
++				my_parts[active_indices[j]]->do_collision(bg_species.get_collision_target(), bg_species.get_collision_theta(), i*dt, my_planet.get_radius(), bg_species.get_collision_dE());
+ 			}
+ 
+ 			// escape velocity at current radius
+@@ -401,6 +401,7 @@
+ 
+ 
+ 	cout << "Number of collisions: " << bg_species.get_num_collisions() << endl;
++	bg_species.print_channel_stats();
+ 	cout << "Active particles remaining: " << active_parts << endl;
+ 	cout << "Number of day side escaped particles: " << day_escape_count << endl;
+ 	cout << "Number of night side escaped particles: " << night_escape_count << endl;
+--- a/src/Background_Species.hpp
++++ b/src/Background_Species.hpp
+@@ -32,6 +32,8 @@
+ 	int get_num_collisions();
+ 	shared_ptr<Particle> get_collision_target();
+ 	double get_collision_theta();
++	double get_collision_dE();        // energy (eV) removed from the relative motion by the next collision (0 = elastic)
++	void print_channel_stats();       // collisions per channel and mean energy loss, for species that have channels
+ 
+ private:
+ 	bool use_temp_profile;       // flag for whether or not temperature profile is available
+@@ -41,6 +43,7 @@
+ 	int collision_target;        // index of particle in bg_parts to be used for next collision
+ 	Planet my_planet;            // contains planet mass, radius, and gravitational constant
+ 	double collision_theta;      // angle (in radians) to be used for next collision
++	double collision_dE;         // energy loss (eV) of the next collision (0 = elastic)
+ 	double ref_temp;             // temperature (in Kelvin) at reference height
+ 	double ref_height;           // height (in cm above planet surface) to extrapolate densities from if no profile available
+ 	double ref_g;                // acceleration due to gravity (G*M/r^2) at reference height
+@@ -67,6 +70,15 @@
+ 	vector<vector<double>> diff_sigma_energies;              // array of available differential cross section energies for each species
+ 	vector<vector<vector<vector<double>>>> diff_sigma_CDFs;  // CDFs built from imported differential cross section tables; used for looking up scattering angles
+ 
++	// collision channels (e.g. final rotational levels of CO2); num_channels[species] = 0 means an ordinary single-channel species
++	vector<int> num_channels;                                    // channels per species
++	vector<vector<double>> channel_dE;                           // [species][channel] energy loss (eV)
++	vector<vector<double>> channel_E;                            // [species][k] energy grid (eV) of the channel cross-section table
++	vector<vector<vector<double>>> channel_sigma;                // [species][channel][k] cross section (cm^2)
++	vector<vector<vector<vector<vector<double>>>>> channel_CDFs; // [species][energy][channel][0 = CDF, 1 = angle][value]
++	vector<vector<long>> channel_counts;                         // [species][channel] collisions sampled (diagnostics)
++	vector<double> channel_dE_sum;                               // [species] summed energy loss (eV) of the sampled collisions (diagnostics)
++
+ 	// returns collision energy in eV between particle 1 and particle 2
+ 	double calc_collision_e(shared_ptr<Particle> p1, shared_ptr<Particle> p2);
+ 
+@@ -76,6 +88,13 @@
+ 	// scans imported differential scattering CDF for new collision theta
+ 	double find_new_theta(int part_index, double energy);
+ 
++	// channels: choose the final channel of a collision at this energy (eV) / scattering angle for that channel / read and build the tables
++	int pick_channel(int part_index, double energy);
++	double find_new_theta_channel(int part_index, int channel, double energy);
++	void make_channel_CDF(int part_index, int energy_index, int channel, vector<double> angle, vector<double> sigma);
++	void read_channel_file(string filename, int n, int part_index);
++	void read_columns(string filename, vector<vector<double>> &cols);
++
+ 	// get density from imported density profile if available
+ 	double get_density(double alt, int index);
+ 
+--- a/src/Background_Species.cpp
++++ b/src/Background_Species.cpp
+@@ -6,6 +6,7 @@
+  */
+ 
+ #include "Background_Species.hpp"
++#include <algorithm>
+ 
+ Background_Species::Background_Species() {
+ 	use_temp_profile = false;
+@@ -19,6 +20,7 @@
+ 	ref_g = 0.0;
+ 	collision_target = -1;
+ 	collision_theta = 0.0;
++	collision_dE = 0.0;
+ 	my_dist = NULL;
+ }
+ 
+@@ -34,6 +36,7 @@
+ 	profile_top_alt = profile_top;
+ 	collision_target = -1;   // set to -1 when no collision happening
+ 	collision_theta = 0.0;
++	collision_dE = 0.0;
+ 	ref_g = (constants::G * my_planet.get_mass()) / (pow(my_planet.get_radius()+ref_height, 2.0));
+ 
+ 	if (temp_profile_filename != "")
+@@ -65,10 +68,19 @@
+ 	avg_v_interp.resize(num_species);
+ 	diff_sigma_energies.resize(num_species);
+ 	diff_sigma_CDFs.resize(num_species);
++	num_channels.assign(num_species, 0);
++	channel_dE.resize(num_species);
++	channel_E.resize(num_species);
++	channel_sigma.resize(num_species);
++	channel_CDFs.resize(num_species);
++	channel_counts.resize(num_species);
++	channel_dE_sum.assign(num_species, 0.0);
+ 	for (int i=0; i<num_species; i++)
+ 	{
+ 		int num_energies = 0;
+ 		int energies_index = 0;
++		int num_channels_cfg = 0;           // channels listed in the species config (0 = ordinary single-channel species)
++		string channel_file_cfg = "";
+ 		bg_sigma_tables[i].resize(2);
+ 		diff_sigma_CDFs[i].resize(2);
+ 
+@@ -132,10 +144,22 @@
+ 				energies_index = j+1;
+ 				diff_sigma_CDFs[i].resize(num_energies);
+ 			}
++			else if (parameters[j] == "num_channels")
++			{
++				num_channels_cfg = stoi(values[j]);
++			}
++			else if (parameters[j] == "channel_file")
++			{
++				channel_file_cfg = values[j];
++			}
+ 		}
+ 		bg_scaleheights[i].push_back(constants::k_b*ref_temp/(bg_parts[i]->get_mass()*ref_g));
+ 		bg_avg_v[i].push_back(sqrt(constants::k_b*ref_temp/bg_parts[i]->get_mass()));
+ 
++		if (num_channels_cfg > 0)
++		{
++			channel_CDFs[i].resize(num_energies);
++		}
+ 		for (int j=0; j<num_energies; j++)
+ 		{
+ 			diff_sigma_CDFs[i][j].resize(2);
+@@ -144,6 +168,28 @@
+ 			diff_sigma_energies[i].push_back(stod(values[energies_index + j]));
+ 			common::import_csv(values[energies_index + num_energies + j], diff_sigma_PDF[0], diff_sigma_PDF[1]);
+ 			make_new_CDF(i, j, diff_sigma_PDF[0], diff_sigma_PDF[1]);
++
++			if (num_channels_cfg > 0)   // the angle file then holds the angle and one differential cross section per channel
++			{
++				vector<vector<double>> cols;
++				read_columns(values[energies_index + num_energies + j], cols);
++				if ((int)cols.size() != num_channels_cfg + 1)
++				{
++					cout << "\"" << values[energies_index + num_energies + j] << "\" must have 1 + num_channels columns!\n";
++					exit(1);
++				}
++				channel_CDFs[i][j].resize(num_channels_cfg);
++				for (int c=0; c<num_channels_cfg; c++)
++				{
++					make_channel_CDF(i, j, c, cols[0], cols[c+1]);
++				}
++			}
++		}
++		if (num_channels_cfg > 0)
++		{
++			read_channel_file(channel_file_cfg, num_channels_cfg, i);
++			num_channels[i] = num_channels_cfg;
++			channel_counts[i].assign(num_channels_cfg, 0);
+ 		}
+ 	}
+ 
+@@ -372,12 +418,25 @@
+ 			}
+ 			energy[collision_target] = calc_collision_e(p, bg_parts[collision_target]);
+ 		}
+-		collision_theta = find_new_theta(collision_target, energy[collision_target]);
++		if (num_channels[collision_target] > 0)   // species with collision channels: pick the channel, then its angle and energy loss
++		{
++			int ch = pick_channel(collision_target, energy[collision_target]);
++			collision_dE = channel_dE[collision_target][ch];
++			collision_theta = find_new_theta_channel(collision_target, ch, energy[collision_target]);
++			channel_counts[collision_target][ch]++;
++			channel_dE_sum[collision_target] += collision_dE;
++		}
++		else
++		{
++			collision_dE = 0.0;
++			collision_theta = find_new_theta(collision_target, energy[collision_target]);
++		}
+ 		return true;
+ 	}
+ 	else
+ 	{
+ 		collision_target = -1;
++		collision_dE = 0.0;
+ 		return false;
+ 	}
+ }
+@@ -457,6 +516,260 @@
+ 	return collision_theta;
+ }
+ 
++double Background_Species::get_collision_dE()
++{
++	return collision_dE;
++}
++
++// reads every comma-separated numeric column of a csv file ('#' and blank lines skipped); cols[0] is the first column
++void Background_Species::read_columns(string filename, vector<vector<double>> &cols)
++{
++	ifstream infile;
++	infile.open(filename);
++	if (!infile.good())
++	{
++		cout << "\"" << filename << "\" not found!\n";
++		exit(1);
++	}
++	string line, word;
++	while (getline(infile, line))
++	{
++		if (line[0] == '#' || line.empty() || std::all_of(line.begin(), line.end(), ::isspace))
++		{
++			continue;
++		}
++		vector<string> row;
++		stringstream str(line);
++		while (getline(str, word, ','))
++		{
++			row.push_back(word);
++		}
++		if (cols.empty())
++		{
++			cols.resize(row.size());
++		}
++		if (row.size() != cols.size())
++		{
++			cout << "\"" << filename << "\": rows with different numbers of columns!\n";
++			exit(1);
++		}
++		for (size_t c=0; c<row.size(); c++)
++		{
++			cols[c].push_back(stod(row[c]));
++		}
++	}
++	infile.close();
++}
++
++// reads the channel table: a row 'dE_eV,<energy loss (eV) of each channel>' and then rows 'E_eV,<cross section (cm^2) of each channel>'
++void Background_Species::read_channel_file(string filename, int n, int part_index)
++{
++	ifstream infile;
++	infile.open(filename);
++	if (!infile.good())
++	{
++		cout << "\"" << filename << "\" not found!\n";
++		exit(1);
++	}
++	channel_dE[part_index].clear();
++	channel_E[part_index].clear();
++	channel_sigma[part_index].assign(n, vector<double>());
++	bool have_dE = false;
++	string line, word;
++	while (getline(infile, line))
++	{
++		if (line[0] == '#' || line.empty() || std::all_of(line.begin(), line.end(), ::isspace))
++		{
++			continue;
++		}
++		vector<string> row;
++		stringstream str(line);
++		while (getline(str, word, ','))
++		{
++			row.push_back(word);
++		}
++		if ((int)row.size() != n + 1)
++		{
++			cout << "\"" << filename << "\": rows must have 1 + num_channels values!\n";
++			exit(1);
++		}
++		if (row[0] == "dE_eV")
++		{
++			for (int c=0; c<n; c++)
++			{
++				channel_dE[part_index].push_back(stod(row[c+1]));
++			}
++			have_dE = true;
++		}
++		else
++		{
++			channel_E[part_index].push_back(stod(row[0]));
++			for (int c=0; c<n; c++)
++			{
++				channel_sigma[part_index][c].push_back(stod(row[c+1]));
++			}
++		}
++	}
++	infile.close();
++	if (!have_dE || channel_E[part_index].size() < 2)
++	{
++		cout << "\"" << filename << "\": needs a 'dE_eV' row and at least two energy rows!\n";
++		exit(1);
++	}
++}
++
++// chooses the channel of a collision at this collision energy (eV): probability proportional to the channel cross section
++// (interpolated linearly in energy, end values outside the table), closed channels (energy loss >= collision energy) excluded
++int Background_Species::pick_channel(int part_index, double energy)
++{
++	int n = num_channels[part_index];
++	if (n == 1)
++	{
++		return 0;   // single channel: nothing to choose, and no random number is used
++	}
++	const vector<double> &E = channel_E[part_index];
++	int i_lo = 0, i_hi = 0;
++	double w_hi = 0.0;
++	if (energy <= E.front())
++	{
++		i_lo = i_hi = 0;
++	}
++	else if (energy >= E.back())
++	{
++		i_lo = i_hi = (int)E.size() - 1;
++	}
++	else
++	{
++		i_hi = lower_bound(E.begin(), E.end(), energy) - E.begin();
++		i_lo = i_hi - 1;
++		w_hi = (energy - E[i_lo]) / (E[i_hi] - E[i_lo]);
++	}
++	vector<double> w(n, 0.0);
++	double total = 0.0;
++	for (int c=0; c<n; c++)
++	{
++		if (channel_dE[part_index][c] >= energy)
++		{
++			continue;   // channel closed at this collision energy
++		}
++		w[c] = (1.0 - w_hi)*channel_sigma[part_index][c][i_lo] + w_hi*channel_sigma[part_index][c][i_hi];
++		total += w[c];
++	}
++	if (total <= 0.0)
++	{
++		return 0;   // nothing open: elastic
++	}
++	double u = common::get_rand() * total;
++	double cum = 0.0;
++	int last = 0;
++	for (int c=0; c<n; c++)
++	{
++		if (w[c] > 0.0)
++		{
++			last = c;
++			cum += w[c];
++			if (u < cum)
++			{
++				return c;
++			}
++		}
++	}
++	return last;   // rounding: the last open channel
++}
++
++// scans the angle CDF of one channel (at the tabulated energy nearest to the collision energy) for a new collision theta
++double Background_Species::find_new_theta_channel(int part_index, int channel, double energy)
++{
++	int energy_index = 0;
++	int num_energies = diff_sigma_energies[part_index].size();
++	if (energy <= diff_sigma_energies[part_index][0])
++	{
++		energy_index = 0;
++	}
++	else if (energy >= diff_sigma_energies[part_index].back())
++	{
++		energy_index = num_energies - 1;
++	}
++	else
++	{
++		double difference = INFINITY;
++		for (int i=0; i<num_energies; i++)
++		{
++			double new_diff = abs(energy - diff_sigma_energies[part_index][i]);
++			if (new_diff < difference)
++			{
++				difference = new_diff;
++				energy_index = i;
++			}
++		}
++	}
++	const vector<double> &cdf = channel_CDFs[part_index][energy_index][channel][0];
++	const vector<double> &ang = channel_CDFs[part_index][energy_index][channel][1];
++	double u = common::get_rand();
++	int k = 0;
++	int last = (int)cdf.size() - 1;
++	while (cdf[k] < u && k < last)
++	{
++		k++;
++	}
++	return ang[k];
++}
++
++// builds the angle CDF of one channel (same method as make_new_CDF)
++void Background_Species::make_channel_CDF(int part_index, int energy_index, int channel, vector<double> angle, vector<double> sigma)
++{
++	int num_angles = angle.size();
++	channel_CDFs[part_index][energy_index][channel].resize(2);
++	vector<double> &cdf = channel_CDFs[part_index][energy_index][channel][0];
++	vector<double> &ang = channel_CDFs[part_index][energy_index][channel][1];
++	cdf.resize(num_angles);
++	ang.resize(num_angles);
++	double sig_total = 0.0;
++	for (int i=0; i<num_angles; i++)
++	{
++		ang[i] = angle[i] * (constants::pi / 180.0);
++		sigma[i] = sigma[i] * sin(angle[i]*constants::pi/180.0);
++		sig_total = sig_total + sigma[i];
++	}
++	if (!(sig_total > 0.0))
++	{
++		cout << "Angle distribution of channel " << channel+1 << " has no positive values: check the channel angle file!\n";
++		exit(1);
++	}
++	for (int i=0; i<num_angles; i++)
++	{
++		cdf[i] = sigma[i] / sig_total + (i > 0 ? cdf[i-1] : 0.0);
++	}
++}
++
++void Background_Species::print_channel_stats()
++{
++	for (int i=0; i<num_species; i++)
++	{
++		if (num_channels[i] == 0)
++		{
++			continue;
++		}
++		long n = 0;
++		for (int c=0; c<num_channels[i]; c++)
++		{
++			n += channel_counts[i][c];
++		}
++		cout << "Channel statistics for " << bg_parts[i]->get_name() << ": " << n << " collisions";
++		if (n > 0)
++		{
++			cout << ", fraction in channel 1 (elastic) " << (double)channel_counts[i][0] / (double)n << ", mean energy loss per collision (eV) " << channel_dE_sum[i] / (double)n;
++		}
++		cout << endl;
++		cout << "Collisions per channel (channel 1 first):";
++		for (int c=0; c<num_channels[i]; c++)
++		{
++			cout << " " << channel_counts[i][c];
++		}
++		cout << endl;
++	}
++}
++
+ // make a new differential cross section CDF and store at diff_sigma_CDFs[part_index][energy_index]
+ void Background_Species::make_new_CDF(int part_index, int energy_index, vector<double> &angle, vector<double> &sigma)
+ {
