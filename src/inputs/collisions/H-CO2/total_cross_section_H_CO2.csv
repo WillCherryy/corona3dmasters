@@ -1,4 +1,5 @@
-#energy [eV],sigma [cm^2]
+#H-CO2 total collision cross sections from Bop and Gacesa 2026
+#Energy(eV),sigma(cm^2)
 0.001000,0.260792548E-13
 0.002000,0.298446130E-13
 0.003000,0.324091277E-13

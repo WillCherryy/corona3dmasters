@@ -1,4 +1,5 @@
-#angle,sigma [cm^2]
+#0.1eV differential cross sections (cm^2 per steradian) for H-CO2 elastic collisions from Bop and Gacesa 2026 (CO2 j = 0 -> j' = 0)
+#angle(deg),sigma(cm^2)
 0.10000,0.428813408438E-12
 0.20000,0.427425425417E-12
 0.30000,0.425121892504E-12
