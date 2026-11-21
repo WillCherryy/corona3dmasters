@@ -22,7 +22,7 @@ public:
 	virtual string get_name() const = 0;  //must be implemented in derived classes
 
 	void deactivate(string fate);
-	void do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r);
+	void do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r, double dE_eV = 0.0);  //dE_eV: energy (eV) removed from the particle due to change in rotational state of CO2 from relative motion (0 = elastic)
 	void do_timestep(double dt, double k_g);
 	void dump_collision_log(string filename);
 	bool is_active() const;
