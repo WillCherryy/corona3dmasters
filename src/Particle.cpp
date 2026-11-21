@@ -55,6 +55,19 @@ void Particle::do_collision(shared_ptr<Particle> target, double theta, double ti
 	Matrix<double, 3, 1> v1v = velocity.array() - vcm.array();        // particle 1 c-o-m velocity
 	// Matrix<double, 3, 1> v2v = targ_v.array() - vcm.array();          // particle 2 c-o-m velocity
 	double v1 = sqrt(v1v[0]*v1v[0] + v1v[1]*v1v[1] + v1v[2]*v1v[2]);  // particle 1 c-o-m scalar velocity
+	//inelastic collision: the kinetic energy of the relative motion of the hydrogen atom (the c-o-m energy) drops by dE_eV, so the c-o-m speed drops by sqrt(1 - dE/E_cm)
+	if (dE_eV > 0.0)
+	{
+		double e_cm = 0.5*my_mass*v1*v1*(1.0 + my_mass/targ_mass);  //c-o-m kinetic energy of both particles (erg)
+		double dE = dE_eV*constants::ergev;
+		if (dE >= e_cm)
+		{
+			cout << "Energy loss of the collision channel exceeds the collision energy: check the channel table\n";
+			exit(1);
+		}
+		v1 = v1*sqrt(1.0 - dE/e_cm);
+	}
+	
 	// double v2 = sqrt(v2v[0]*v2v[0] + v2v[1]*v2v[1] + v2v[2]*v2v[2]);  // particle 2 c-o-m scalar velocity
 
 	// unit vector parallel to particle 1 velocity
