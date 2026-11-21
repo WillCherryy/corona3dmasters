@@ -42,7 +42,7 @@ void Particle::deactivate(string fate)
 }
 
 // perform collision on a particle and update velocity vector
-void Particle::do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r)
+void Particle::do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r, double dE_eV)
 {
 	double v_before, v_after;
 	double my_mass = get_mass();
