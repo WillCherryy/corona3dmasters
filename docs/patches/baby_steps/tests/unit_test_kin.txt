@@ -1,0 +1,1 @@
+4000 collisions (2000 with an energy loss of 2-36 % of E_cm): worst relative error of E_cm after = E_cm before - dE: 1.41e-15; worst |cos(angle to incident direction) - cos(theta)|: 5.55e-16; worst momentum error: 6.77e-16

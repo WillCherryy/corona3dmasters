@@ -1,0 +1,173 @@
+--- a/src/Background_Species.hpp
++++ b/src/Background_Species.hpp
+@@ -12,6 +12,7 @@
+ #include <iostream>
+ #include <sstream>
+ #include <fstream>
++#include <random>
+ #include "Particle_CO.hpp"
+ #include "Particle_CO2.hpp"
+ #include "Particle_H.hpp"
+@@ -32,6 +33,8 @@
+ 	int get_num_collisions();
+ 	shared_ptr<Particle> get_collision_target();
+ 	double get_collision_theta();
++	bool get_collision_inelastic();     // type of the next collision: true = inelastic (step 1: declared and counted only)
++	void print_collision_type_stats();  // collisions declared elastic / inelastic, for species with an elastic cross-section table
+ 
+ private:
+ 	bool use_temp_profile;       // flag for whether or not temperature profile is available
+@@ -41,6 +44,7 @@
+ 	int collision_target;        // index of particle in bg_parts to be used for next collision
+ 	Planet my_planet;            // contains planet mass, radius, and gravitational constant
+ 	double collision_theta;      // angle (in radians) to be used for next collision
++	bool collision_inelastic;    // true if the next collision is declared inelastic
+ 	double ref_temp;             // temperature (in Kelvin) at reference height
+ 	double ref_height;           // height (in cm above planet surface) to extrapolate densities from if no profile available
+ 	double ref_g;                // acceleration due to gravity (G*M/r^2) at reference height
+@@ -67,6 +71,12 @@
+ 	vector<vector<double>> diff_sigma_energies;              // array of available differential cross section energies for each species
+ 	vector<vector<vector<vector<double>>>> diff_sigma_CDFs;  // CDFs built from imported differential cross section tables; used for looking up scattering angles
+ 
++	// declaration of the collision type (elastic / inelastic)
++	vector<shared_ptr<Interpolator>> elastic_interp;  // elastic cross-section tables (empty pointer = no table: every collision of that species is elastic)
++	vector<long> type_counts_el;                      // [species] collisions declared elastic
++	vector<long> type_counts_inel;                    // [species] collisions declared inelastic
++	mt19937_64 type_gen;                              // SEPARATE random generator for the declaration: the main random stream (and so every seeded result) is not touched
++
+ 	// returns collision energy in eV between particle 1 and particle 2
+ 	double calc_collision_e(shared_ptr<Particle> p1, shared_ptr<Particle> p2);
+ 
+@@ -76,6 +86,9 @@
+ 	// scans imported differential scattering CDF for new collision theta
+ 	double find_new_theta(int part_index, double energy);
+ 
++	// declares whether a collision with this species at this energy (eV) is inelastic: probability 1 - sigma_elastic / sigma_total
++	bool is_collision_inelastic(int part_index, double energy, double total_sigma);
++
+ 	// get density from imported density profile if available
+ 	double get_density(double alt, int index);
+ 
+--- a/src/Background_Species.cpp
++++ b/src/Background_Species.cpp
+@@ -19,6 +19,7 @@
+ 	ref_g = 0.0;
+ 	collision_target = -1;
+ 	collision_theta = 0.0;
++	collision_inelastic = false;
+ 	my_dist = NULL;
+ }
+ 
+@@ -34,6 +35,8 @@
+ 	profile_top_alt = profile_top;
+ 	collision_target = -1;   // set to -1 when no collision happening
+ 	collision_theta = 0.0;
++	collision_inelastic = false;
++	type_gen.seed(20260101);   // fixed seed of the separate generator used only to declare the collision type
+ 	ref_g = (constants::G * my_planet.get_mass()) / (pow(my_planet.get_radius()+ref_height, 2.0));
+ 
+ 	if (temp_profile_filename != "")
+@@ -65,6 +68,9 @@
+ 	avg_v_interp.resize(num_species);
+ 	diff_sigma_energies.resize(num_species);
+ 	diff_sigma_CDFs.resize(num_species);
++	elastic_interp.resize(num_species);
++	type_counts_el.assign(num_species, 0);
++	type_counts_inel.assign(num_species, 0);
+ 	for (int i=0; i<num_species; i++)
+ 	{
+ 		int num_energies = 0;
+@@ -132,6 +138,12 @@
+ 				energies_index = j+1;
+ 				diff_sigma_CDFs[i].resize(num_energies);
+ 			}
++			else if (parameters[j] == "elastic_sigma_file")
++			{
++				vector<double> e_el, s_el;
++				common::import_csv(values[j], e_el, s_el);
++				elastic_interp[i] = make_shared<Interpolator>(e_el, s_el);
++			}
+ 		}
+ 		bg_scaleheights[i].push_back(constants::k_b*ref_temp/(bg_parts[i]->get_mass()*ref_g));
+ 		bg_avg_v[i].push_back(sqrt(constants::k_b*ref_temp/bg_parts[i]->get_mass()));
+@@ -372,12 +384,14 @@
+ 			}
+ 			energy[collision_target] = calc_collision_e(p, bg_parts[collision_target]);
+ 		}
++		collision_inelastic = is_collision_inelastic(collision_target, energy[collision_target], total_sig[collision_target]);   // declaration only: nothing else changes
+ 		collision_theta = find_new_theta(collision_target, energy[collision_target]);
+ 		return true;
+ 	}
+ 	else
+ 	{
+ 		collision_target = -1;
++		collision_inelastic = false;
+ 		return false;
+ 	}
+ }
+@@ -457,6 +471,55 @@
+ 	return collision_theta;
+ }
+ 
++bool Background_Species::get_collision_inelastic()
++{
++	return collision_inelastic;
++}
++
++// declares whether a collision with this species at this collision energy (eV) is inelastic. Probability of inelastic = 1 - sigma_elastic/sigma_total
++// (both interpolated at the collision energy). Uses the separate generator type_gen, so the main random stream is not used.
++bool Background_Species::is_collision_inelastic(int part_index, double energy, double total_sigma)
++{
++	if (!elastic_interp[part_index])
++	{
++		return false;   // no elastic table: every collision of this species is elastic (as before)
++	}
++	double p_el = elastic_interp[part_index]->linterp(energy) / total_sigma;
++	if (p_el > 1.0)
++	{
++		p_el = 1.0;
++	}
++	double u = (double)(type_gen() >> 11) * (1.0 / 9007199254740992.0);   // uniform in [0, 1)
++	bool inelastic = (u >= p_el);
++	if (inelastic)
++	{
++		type_counts_inel[part_index]++;
++	}
++	else
++	{
++		type_counts_el[part_index]++;
++	}
++	return inelastic;
++}
++
++void Background_Species::print_collision_type_stats()
++{
++	for (int i=0; i<num_species; i++)
++	{
++		if (!elastic_interp[i])
++		{
++			continue;
++		}
++		long n = type_counts_el[i] + type_counts_inel[i];
++		cout << "Collision types for " << bg_parts[i]->get_name() << ": " << n << " collisions, elastic " << type_counts_el[i] << ", inelastic " << type_counts_inel[i];
++		if (n > 0)
++		{
++			cout << ", fraction inelastic " << (double)type_counts_inel[i] / (double)n;
++		}
++		cout << endl;
++	}
++}
++
+ // make a new differential cross section CDF and store at diff_sigma_CDFs[part_index][energy_index]
+ void Background_Species::make_new_CDF(int part_index, int energy_index, vector<double> &angle, vector<double> &sigma)
+ {
+--- a/src/Atmosphere.cpp
++++ b/src/Atmosphere.cpp
+@@ -401,6 +401,7 @@
+ 
+ 
+ 	cout << "Number of collisions: " << bg_species.get_num_collisions() << endl;
++	bg_species.print_collision_type_stats();
+ 	cout << "Active particles remaining: " << active_parts << endl;
+ 	cout << "Number of day side escaped particles: " << day_escape_count << endl;
+ 	cout << "Number of night side escaped particles: " << night_escape_count << endl;

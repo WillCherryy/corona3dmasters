@@ -1,0 +1,8 @@
+energy eV: table inelastic fraction (1 - sigma_el/sigma_tot) | declared inelastic fraction (4e6 draws)
+ 0.01: 0.19239 | 0.19277
+ 0.10: 0.38969 | 0.38934
+ 0.35: 0.49218 | 0.49273
+ 1.00: 0.52537 | 0.52559
+ 3.00: 0.53004 | 0.53006
+ 5.00: 0.52806 | 0.52821
+ 8.00: 0.52806 | 0.52786

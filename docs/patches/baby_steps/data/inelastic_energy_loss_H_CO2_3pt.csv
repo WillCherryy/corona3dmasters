@@ -1,0 +1,5 @@
+#H-CO2 mean energy loss per inelastic collision from Bop and Gacesa 2026 (rotational energy gained by CO2, CO2 initially in j = 0; B = 0.39022 cm-1)
+#Energy(eV),dE(eV)
+0.100000,2.725808E-03
+1.000000,1.503984E-02
+5.000000,3.381422E-02
