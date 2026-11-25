@@ -1,0 +1,173 @@
+--- a/src/Particle.hpp
++++ b/src/Particle.hpp
+@@ -22,7 +22,7 @@
+ 	virtual string get_name() const = 0;  //must be implemented in derived classes
+ 
+ 	void deactivate(string fate);
+-	void do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r);
++	void do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r, double dE_eV = 0.0);   // dE_eV: energy (eV) removed from the relative motion (0 = elastic)
+ 	void do_timestep(double dt, double k_g);
+ 	void dump_collision_log(string filename);
+ 	bool is_active() const;
+--- a/src/Particle.cpp
++++ b/src/Particle.cpp
+@@ -42,7 +42,7 @@
+ }
+ 
+ // perform collision on a particle and update velocity vector
+-void Particle::do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r)
++void Particle::do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r, double dE_eV)
+ {
+ 	double v_before, v_after;
+ 	double my_mass = get_mass();
+@@ -55,6 +55,19 @@
+ 	Matrix<double, 3, 1> v1v = velocity.array() - vcm.array();        // particle 1 c-o-m velocity
+ 	// Matrix<double, 3, 1> v2v = targ_v.array() - vcm.array();          // particle 2 c-o-m velocity
+ 	double v1 = sqrt(v1v[0]*v1v[0] + v1v[1]*v1v[1] + v1v[2]*v1v[2]);  // particle 1 c-o-m scalar velocity
++
++	// inelastic collision: the kinetic energy of the relative motion (the c-o-m energy) drops by dE_eV, so the c-o-m speed drops by sqrt(1 - dE/E_cm)
++	if (dE_eV > 0.0)
++	{
++		double e_cm = 0.5*my_mass*v1*v1*(1.0 + my_mass/targ_mass);   // c-o-m kinetic energy of both particles (erg)
++		double dE = dE_eV*constants::ergev;
++		if (dE >= e_cm)
++		{
++			cout << "Energy loss of the collision exceeds the collision energy: check the energy-loss table\n";
++			exit(1);
++		}
++		v1 = v1*sqrt(1.0 - dE/e_cm);
++	}
+ 	// double v2 = sqrt(v2v[0]*v2v[0] + v2v[1]*v2v[1] + v2v[2]*v2v[2]);  // particle 2 c-o-m scalar velocity
+ 
+ 	// unit vector parallel to particle 1 velocity
+--- a/src/Atmosphere.cpp
++++ b/src/Atmosphere.cpp
+@@ -338,7 +338,7 @@
+ 
+ 			if (bg_species.check_collision(my_parts[active_indices[j]], dt))
+ 			{
+-				my_parts[active_indices[j]]->do_collision(bg_species.get_collision_target(), bg_species.get_collision_theta(), i*dt, my_planet.get_radius());
++				my_parts[active_indices[j]]->do_collision(bg_species.get_collision_target(), bg_species.get_collision_theta(), i*dt, my_planet.get_radius(), bg_species.get_collision_dE());
+ 			}
+ 
+ 			// escape velocity at current radius
+--- a/src/Background_Species.hpp
++++ b/src/Background_Species.hpp
+@@ -33,6 +33,7 @@
+ 	int get_num_collisions();
+ 	shared_ptr<Particle> get_collision_target();
+ 	double get_collision_theta();
++	double get_collision_dE();          // energy (eV) removed from the relative motion by the next collision (0 = elastic)
+ 	bool get_collision_inelastic();     // type of the next collision: true = inelastic (step 1: declared and counted only)
+ 	void print_collision_type_stats();  // collisions declared elastic / inelastic, for species with an elastic cross-section table
+ 
+@@ -45,6 +46,7 @@
+ 	Planet my_planet;            // contains planet mass, radius, and gravitational constant
+ 	double collision_theta;      // angle (in radians) to be used for next collision
+ 	bool collision_inelastic;    // true if the next collision is declared inelastic
++	double collision_dE;         // energy loss (eV) of the next collision (0 = elastic or no loss table)
+ 	double ref_temp;             // temperature (in Kelvin) at reference height
+ 	double ref_height;           // height (in cm above planet surface) to extrapolate densities from if no profile available
+ 	double ref_g;                // acceleration due to gravity (G*M/r^2) at reference height
+@@ -73,6 +75,9 @@
+ 
+ 	// declaration of the collision type (elastic / inelastic)
+ 	vector<shared_ptr<Interpolator>> elastic_interp;  // elastic cross-section tables (empty pointer = no table: every collision of that species is elastic)
++	vector<shared_ptr<Interpolator>> inelastic_dE_interp;   // mean energy loss (eV) of an inelastic collision against collision energy (empty pointer = no loss)
++	vector<double> dE_sum;                                  // [species] summed energy loss (eV) of the inelastic collisions (diagnostics)
++	vector<long> dE_closed;                                 // [species] inelastic collisions whose loss was not below the collision energy (treated as elastic)
+ 	vector<long> type_counts_el;                      // [species] collisions declared elastic
+ 	vector<long> type_counts_inel;                    // [species] collisions declared inelastic
+ 	mt19937_64 type_gen;                              // SEPARATE random generator for the declaration: the main random stream (and so every seeded result) is not touched
+--- a/src/Background_Species.cpp
++++ b/src/Background_Species.cpp
+@@ -20,6 +20,7 @@
+ 	collision_target = -1;
+ 	collision_theta = 0.0;
+ 	collision_inelastic = false;
++	collision_dE = 0.0;
+ 	my_dist = NULL;
+ }
+ 
+@@ -36,6 +37,7 @@
+ 	collision_target = -1;   // set to -1 when no collision happening
+ 	collision_theta = 0.0;
+ 	collision_inelastic = false;
++	collision_dE = 0.0;
+ 	type_gen.seed(20260101);   // fixed seed of the separate generator used only to declare the collision type
+ 	ref_g = (constants::G * my_planet.get_mass()) / (pow(my_planet.get_radius()+ref_height, 2.0));
+ 
+@@ -69,6 +71,9 @@
+ 	diff_sigma_energies.resize(num_species);
+ 	diff_sigma_CDFs.resize(num_species);
+ 	elastic_interp.resize(num_species);
++	inelastic_dE_interp.resize(num_species);
++	dE_sum.assign(num_species, 0.0);
++	dE_closed.assign(num_species, 0);
+ 	type_counts_el.assign(num_species, 0);
+ 	type_counts_inel.assign(num_species, 0);
+ 	for (int i=0; i<num_species; i++)
+@@ -138,6 +143,12 @@
+ 				energies_index = j+1;
+ 				diff_sigma_CDFs[i].resize(num_energies);
+ 			}
++			else if (parameters[j] == "inelastic_dE_file")
++			{
++				vector<double> e_dE, s_dE;
++				common::import_csv(values[j], e_dE, s_dE);
++				inelastic_dE_interp[i] = make_shared<Interpolator>(e_dE, s_dE);
++			}
+ 			else if (parameters[j] == "elastic_sigma_file")
+ 			{
+ 				vector<double> e_el, s_el;
+@@ -384,7 +395,18 @@
+ 			}
+ 			energy[collision_target] = calc_collision_e(p, bg_parts[collision_target]);
+ 		}
+-		collision_inelastic = is_collision_inelastic(collision_target, energy[collision_target], total_sig[collision_target]);   // declaration only: nothing else changes
++		collision_inelastic = is_collision_inelastic(collision_target, energy[collision_target], total_sig[collision_target]);
++		collision_dE = 0.0;
++		if (collision_inelastic && inelastic_dE_interp[collision_target])   // fixed energy loss of an inelastic collision at this collision energy
++		{
++			collision_dE = inelastic_dE_interp[collision_target]->linterp(energy[collision_target]);
++			if (collision_dE >= energy[collision_target])
++			{
++				collision_dE = 0.0;   // channel closed (only possible below the lowest tabulated energy): no loss, counted
++				dE_closed[collision_target]++;
++			}
++			dE_sum[collision_target] += collision_dE;
++		}
+ 		collision_theta = find_new_theta(collision_target, energy[collision_target]);
+ 		return true;
+ 	}
+@@ -392,6 +414,7 @@
+ 	{
+ 		collision_target = -1;
+ 		collision_inelastic = false;
++		collision_dE = 0.0;
+ 		return false;
+ 	}
+ }
+@@ -471,6 +494,11 @@
+ 	return collision_theta;
+ }
+ 
++double Background_Species::get_collision_dE()
++{
++	return collision_dE;
++}
++
+ bool Background_Species::get_collision_inelastic()
+ {
+ 	return collision_inelastic;
+@@ -516,6 +544,10 @@
+ 		{
+ 			cout << ", fraction inelastic " << (double)type_counts_inel[i] / (double)n;
+ 		}
++		if (inelastic_dE_interp[i] && type_counts_inel[i] > 0)
++		{
++			cout << ", mean energy loss per inelastic collision (eV) " << dE_sum[i] / (double)type_counts_inel[i] << ", loss not below the collision energy (set to zero) " << dE_closed[i];
++		}
+ 		cout << endl;
+ 	}
+ }
