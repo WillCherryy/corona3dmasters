@@ -1,0 +1,8 @@
+a04a51a726dc5f5383a19215f05d014448253ecd WillCherryy 2026-11-23 18:26:03 +0000 Add channel selection and CDF functions
+81d8de0290a8af701f14452cb854362cbf6cbb1a WillCherryy 2026-11-23 18:25:03 +0000 Add collision channel data structures in Background_Species
+84592493ff9293e959d098aad4953a3453eee827 WillCherryy 2026-11-23 18:22:57 +0000 Add collision energy loss and stats printing methods
+451847e404c68d478b65ffbf714f7b930846f69e WillCherryy 2026-11-23 18:18:27 +0000 Print channel stats after number of collisions
+9e8ea6ead9e14588d32fbd095004e3c3621d10ff WillCherryy 2026-11-23 18:15:46 +0000 Add energy change parameter to collision handling
+f58c9290a4c11cac30b918c69122d2db1ac4a5b0 WillCherryy 2026-11-21 18:09:51 +0000 Implement inelastic collision energy loss calculation
+b4af2036748b16db7a53aebb5126a9e75e34d994 WillCherryy 2026-11-21 17:59:32 +0000 Update Particle.cpp
+71528291f6bc411a6c81e3afa350e5ded7244a99 WillCherryy 2026-11-21 17:41:21 +0000 Modify do_collision to accept energy parameter

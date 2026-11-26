@@ -1,0 +1,119 @@
+diff --git a/src/Atmosphere.cpp b/src/Atmosphere.cpp
+index de24d5c..2022465 100644
+--- a/src/Atmosphere.cpp
++++ b/src/Atmosphere.cpp
+@@ -338,7 +338,7 @@ void Atmosphere::run_simulation(double dt, int num_steps, double lower_bound, do
+ 
+ 			if (bg_species.check_collision(my_parts[active_indices[j]], dt))
+ 			{
+-				my_parts[active_indices[j]]->do_collision(bg_species.get_collision_target(), bg_species.get_collision_theta(), i*dt, my_planet.get_radius());
++				my_parts[active_indices[j]]->do_collision(bg_species.get_collision_target(), bg_species.get_collision_theta(), i*dt, my_planet.get_radius(), bg_species.get_collision_dE());
+ 			}
+ 
+ 			// escape velocity at current radius
+@@ -400,7 +400,7 @@ void Atmosphere::run_simulation(double dt, int num_steps, double lower_bound, do
+ 	output_stats(dt, (global_rate / 2.0), num_parts, output_stats_dir, my_vtally);
+ 
+ 
+-	cout << "Number of collisions: " << bg_species.get_num_collisions() << endl;
++	cout << "Number of collisions: " << bg_species.get_num_collisions() << endl; bg_species.print_channel_stats();
+ 	cout << "Active particles remaining: " << active_parts << endl;
+ 	cout << "Number of day side escaped particles: " << day_escape_count << endl;
+ 	cout << "Number of night side escaped particles: " << night_escape_count << endl;
+diff --git a/src/Background_Species.hpp b/src/Background_Species.hpp
+index 1618ce3..4c8c2aa 100644
+--- a/src/Background_Species.hpp
++++ b/src/Background_Species.hpp
+@@ -32,6 +32,8 @@ public:
+ 	int get_num_collisions();
+ 	shared_ptr<Particle> get_collision_target();
+ 	double get_collision_theta();
++	double get_collision_dE();   // energy (eV) removed from the relative motion by the next collision (0 = elastic)
++	void print_channel_stats();  // collisions per channel and mean energy loss for species which have channels
+ 
+ private:
+ 	bool use_temp_profile;       // flag for whether or not temperature profile is available
+@@ -41,6 +43,7 @@ private:
+ 	int collision_target;        // index of particle in bg_parts to be used for next collision
+ 	Planet my_planet;            // contains planet mass, radius, and gravitational constant
+ 	double collision_theta;      // angle (in radians) to be used for next collision
++	double collision_dE; 		 // energy loss (eV) of the next collision (0 = elastic)
+ 	double ref_temp;             // temperature (in Kelvin) at reference height
+ 	double ref_height;           // height (in cm above planet surface) to extrapolate densities from if no profile available
+ 	double ref_g;                // acceleration due to gravity (G*M/r^2) at reference height
+@@ -66,6 +69,15 @@ private:
+ 	vector<shared_ptr<Interpolator>> avg_v_interp;   // avg_v interpolator objects
+ 	vector<vector<double>> diff_sigma_energies;              // array of available differential cross section energies for each species
+ 	vector<vector<vector<vector<double>>>> diff_sigma_CDFs;  // CDFs built from imported differential cross section tables; used for looking up scattering angles
++	
++	// collision channels (e.g. final rotational levels of CO2); num_channels[species] = 0 means an ordinary single-channel species
++	vector<int> num_channels;                                    // channels per species
++	vector<vector<double>> channel_dE;                           // [species][channel] energy loss (eV)
++	vector<vector<double>> channel_E;                            // [species][k] energy grid (eV) of the channel cross-section table
++	vector<vector<vector<double>>> channel_sigma;                // [species][channel][k] cross section (cm^2)
++	vector<vector<vector<vector<vector<double>>>>> channel_CDFs; // [species][energy][channel][0 = CDF, 1 = angle][value]
++	vector<vector<long>> channel_counts;                         // [species][channel] collisions sampled (diagnostics)
++	vector<double> channel_dE_sum;                               // [species] summed energy loss (eV) of the sampled collisions (diagnostics)
+ 
+ 	// returns collision energy in eV between particle 1 and particle 2
+ 	double calc_collision_e(shared_ptr<Particle> p1, shared_ptr<Particle> p2);
+@@ -76,6 +88,13 @@ private:
+ 	// scans imported differential scattering CDF for new collision theta
+ 	double find_new_theta(int part_index, double energy);
+ 
++	// channels: choose the final channel of a collision at this energy (eV) / scattering angle for that channel / read and build the tables
++	int pick_channel(int part_index, double energy);
++	double find_new_theta_channel(int part_index, int channel, double energy);
++	void make_channel_CDF(int part_index, int energy_index, int channel, vector<double> angle, vector<double> sigma);
++	void read_channel_file(string filename, int n, int part_index);
++	void read_columns(string filename, vector<vector<double>> &cols);
++
+ 	// get density from imported density profile if available
+ 	double get_density(double alt, int index);
+ 
+diff --git a/src/Particle.cpp b/src/Particle.cpp
+index 7fb2cbe..17b2a4b 100644
+--- a/src/Particle.cpp
++++ b/src/Particle.cpp
+@@ -42,7 +42,7 @@ void Particle::deactivate(string fate)
+ }
+ 
+ // perform collision on a particle and update velocity vector
+-void Particle::do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r)
++void Particle::do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r, double dE_eV)
+ {
+ 	double v_before, v_after;
+ 	double my_mass = get_mass();
+@@ -55,6 +55,19 @@ void Particle::do_collision(shared_ptr<Particle> target, double theta, double ti
+ 	Matrix<double, 3, 1> v1v = velocity.array() - vcm.array();        // particle 1 c-o-m velocity
+ 	// Matrix<double, 3, 1> v2v = targ_v.array() - vcm.array();          // particle 2 c-o-m velocity
+ 	double v1 = sqrt(v1v[0]*v1v[0] + v1v[1]*v1v[1] + v1v[2]*v1v[2]);  // particle 1 c-o-m scalar velocity
++	//inelastic collision: the kinetic energy of the relative motion of the hydrogen atom (the c-o-m energy) drops by dE_eV, so the c-o-m speed drops by sqrt(1 - dE/E_cm)
++	if (dE_eV > 0.0)
++	{
++		double e_cm = 0.5*my_mass*v1*v1*(1.0 + my_mass/targ_mass);  //c-o-m kinetic energy of both particles (erg)
++		double dE = dE_eV*constants::ergev;
++		if (dE >= e_cm)
++		{
++			cout << "Energy loss of the collision channel exceeds the collision energy: check the channel table\n";
++			exit(1);
++		}
++		v1 = v1*sqrt(1.0 - dE/e_cm);
++	}
++	
+ 	// double v2 = sqrt(v2v[0]*v2v[0] + v2v[1]*v2v[1] + v2v[2]*v2v[2]);  // particle 2 c-o-m scalar velocity
+ 
+ 	// unit vector parallel to particle 1 velocity
+diff --git a/src/Particle.hpp b/src/Particle.hpp
+index 545f988..1c9b8df 100644
+--- a/src/Particle.hpp
++++ b/src/Particle.hpp
+@@ -22,7 +22,7 @@ public:
+ 	virtual string get_name() const = 0;  //must be implemented in derived classes
+ 
+ 	void deactivate(string fate);
+-	void do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r);
++	void do_collision(shared_ptr<Particle> target, double theta, double time, double planet_r, double dE_eV = 0.0);  //dE_eV: energy (eV) removed from the relative motion of the hydrogen atom due to rotational state change in CO2 (0 = elastic)
+ 	void do_timestep(double dt, double k_g);
+ 	void dump_collision_log(string filename);
+ 	bool is_active() const;
